@@ -1,4 +1,12 @@
-﻿___INFO___
+﻿___TERMS_OF_SERVICE___
+
+By creating or modifying this file you agree to Google Tag Manager's Community
+Template Gallery Developer Terms of Service available at
+https://developers.google.com/tag-manager/gallery-tos (or such other URL as
+Google may provide), as modified from time to time.
+
+
+___INFO___
 
 {
   "displayName": "Sklik",
@@ -508,6 +516,6 @@ scenarios:
 
 ___NOTES___
 
-Created on 17. 5. 2020 0:23:33
+Created on 17. 5. 2020 0:30:14
 
 
