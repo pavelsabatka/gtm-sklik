@@ -1,5 +1,5 @@
 homepage: "https://www.houseofrezac.com"
 documentation: "https://www.houseofrezac.com"
 versions:
-  - sha: 9fef17d2fde72b9c9764d332b156a7962c702e51
+  - sha: a054365d9f2604f9c83f38a3853a03ecee27ff38
     changeNotes: Initial release.
