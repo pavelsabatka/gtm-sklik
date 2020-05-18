@@ -50,12 +50,12 @@ ___TEMPLATE_PARAMETERS___
     "macrosInSelect": false,
     "selectItems": [
       {
-        "displayValue": "Retargeting",
-        "value": "retargeting"
-      },
-      {
         "displayValue": "Conversion",
         "value": "conversion"
+      },
+      {
+        "value": "retargeting",
+        "displayValue": "Retargeting"
       }
     ],
     "valueValidators": [
@@ -67,29 +67,6 @@ ___TEMPLATE_PARAMETERS___
     "simpleValueType": true,
     "name": "codetype",
     "type": "SELECT"
-  },
-  {
-    "clearOnCopy": false,
-    "valueValidators": [
-      {
-        "type": "NON_EMPTY"
-      }
-    ],
-    "displayName": "Model type",
-    "defaultValue": "mh",
-    "simpleValueType": true,
-    "name": "model",
-    "type": "RADIO",
-    "radioItems": [
-      {
-        "displayValue": "Measurement Hub",
-        "value": "mh"
-      },
-      {
-        "displayValue": "Standard Variables",
-        "value": "vars"
-      }
-    ]
   },
   {
     "enablingConditions": [
@@ -105,51 +82,14 @@ ___TEMPLATE_PARAMETERS___
     "type": "GROUP",
     "subParams": [
       {
-        "macrosInSelect": true,
-        "selectItems": [],
-        "enablingConditions": [
-          {
-            "paramName": "model",
-            "type": "EQUALS",
-            "paramValue": "mh"
-          }
-        ],
-        "valueValidators": [
-          {
-            "type": "NON_EMPTY"
-          }
-        ],
-        "displayName": "{{aac.order}}",
-        "defaultValue": "{{aac.order}}",
-        "simpleValueType": true,
-        "name": "order",
-        "type": "SELECT"
-      },
-      {
         "type": "TEXT",
         "name": "orderId",
-        "displayName": "ID",
+        "displayName": "Order ID",
         "simpleValueType": true,
-        "enablingConditions": [
-          {
-            "paramName": "model",
-            "paramValue": "vars",
-            "type": "EQUALS"
-          }
-        ],
-        "canBeEmptyString": false,
-        "clearOnCopy": false
+        "canBeEmptyString": false
       },
       {
         "clearOnCopy": false,
-        "enablingConditions": [
-          {
-            "paramName": "model",
-            "type": "EQUALS",
-            "paramValue": "vars"
-          }
-        ],
-        "valueValidators": [],
         "displayName": "Revenue",
         "simpleValueType": true,
         "name": "revenue",
@@ -171,6 +111,29 @@ ___TEMPLATE_PARAMETERS___
     "groupStyle": "NO_ZIPPY",
     "type": "GROUP",
     "subParams": [
+      {
+        "clearOnCopy": false,
+        "valueValidators": [
+          {
+            "type": "NON_EMPTY"
+          }
+        ],
+        "displayName": "Model type",
+        "defaultValue": "vars",
+        "simpleValueType": true,
+        "name": "model",
+        "type": "RADIO",
+        "radioItems": [
+          {
+            "displayValue": "Measurement Hub",
+            "value": "mh"
+          },
+          {
+            "displayValue": "Standard Variables",
+            "value": "vars"
+          }
+        ]
+      },
       {
         "notSetText": "Not set",
         "clearOnCopy": false,
@@ -273,15 +236,15 @@ ___TEMPLATE_PARAMETERS___
         "name": "category",
         "type": "TEXT",
         "canBeEmptyString": false
-      },
-      {
-        "displayName": "URL",
-        "simpleValueType": true,
-        "name": "url",
-        "type": "TEXT",
-        "canBeEmptyString": false
       }
     ]
+  },
+  {
+    "displayName": "URL",
+    "simpleValueType": true,
+    "name": "url",
+    "type": "TEXT",
+    "canBeEmptyString": true
   }
 ]
 
@@ -300,17 +263,17 @@ const getUrl = require('getUrl');
 const Math = require('Math');
 
 
+
 if (data.codetype === 'retargeting') {
   let params = {
     'id': data.id,
     'url': encodeUriComponent(data.url ? data.url : getUrl())
   };
 
-
   let sid = getCookieValues('sid');
-  sid = sid.length ? sid[0] : null;
+  sid = (sid && sid.length) ? sid[0] : '';
   params.dsid = encodeUriComponent(sid);
-  
+
   
   if (data.model === 'mh') {
     if (data.page && data.page.type) {
@@ -335,15 +298,12 @@ if (data.codetype === 'retargeting') {
     if (data.category) params.category = data.category || '';
   }
   
-  
   let paramsStr = '';
   for (let key in params) {
     paramsStr += '&' + key + '=' + params[key];
   }
   let url = 'https://c.imedia.cz/retargeting?' + paramsStr.substring(1);
-  
-  sendPixel(url, () => { data.gtmOnSuccess(); }, () => { data.gtmOnFailure(); });
-  
+  sendPixel(url, () => { data.gtmOnSuccess(); }, () => { data.gtmOnFailure(); });  
   log('SKLIK RETARGETING', params, url);
 
 
@@ -354,12 +314,12 @@ if (data.codetype === 'retargeting') {
   let orderId = (data.model === 'mh' ? data.order.id : data.orderId) || '';
   let revenue = (data.model === 'mh' ? data.order.revenue : data.revenue) || null;
   let sid = getCookieValues('sid');
-  sid = sid.length ? sid[0] : null;
-
+  sid = (sid && sid.length) ? sid[0] : '';
   
   let url = 'https://c.imedia.cz/conv?id=' + data.id;
-  url += '&orderId=' + encodeUriComponent(data.orderId);
+  url += '&orderId=' + encodeUriComponent(orderId);
   url += '&value=' + (revenue ? (Math.round(revenue*100) / 100) : '');
+
   if (sid) {
     let encodedSid = encodeUriComponent(sid);
     url += '&lsid=' + encodedSid;
@@ -369,11 +329,11 @@ if (data.codetype === 'retargeting') {
 
   sendPixel(url, () => {
     data.gtmOnSuccess();
-    log('SKLIK CONVERSION', url, {'id': data.id, 'orderId': orderId, 'revenue': revenue, 'sid': sid});
-  }, data.gtmOnFailure);
-
-  
-  
+    log('SKLIK CONVERSION: status success', url, {'id': data.id, 'orderId': orderId, 'revenue': revenue, 'sid': sid});
+  }, () => {
+    data.gtmOnFailure();
+    log('SKLIK CONVERSION: status failure', url, {'id': data.id, 'orderId': orderId, 'revenue': revenue, 'sid': sid});
+  });
 
 } else {
   log('Unknown codetype ' + data.codetype);
@@ -451,6 +411,9 @@ ___WEB_PERMISSIONS___
         }
       ]
     },
+    "clientAnnotations": {
+      "isEditedByUser": true
+    },
     "isRequired": true
   },
   {
@@ -509,9 +472,6 @@ scenarios:
 
     // Call runCode to run the template's code.
     runCode(mockData);
-
-    // Verify that the tag finished successfully.
-    //assertApi('gtmOnSuccess').wasCalled();
 
 
 ___NOTES___
