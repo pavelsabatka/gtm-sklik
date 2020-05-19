@@ -11,7 +11,7 @@ ___INFO___
 {
   "displayName": "Sklik",
   "categories": ["REMARKETING", "ANALYTICS", "ADVERTISING"],
-  "description": "Conversion code for Sklik.\nTemplate for MeasurementHub",
+  "description": "Conversion \u0026 remarketing code for Sklik. Supporting RC.js code form May 2020.\n@author House of Rezac\n@version 2020-05-19",
   "securityGroups": [],
   "id": "cvt_temp_public_id",
   "type": "TAG",
@@ -41,7 +41,7 @@ ___TEMPLATE_PARAMETERS___
         "type": "POSITIVE_NUMBER"
       }
     ],
-    "displayName": "ID",
+    "displayName": "ID *",
     "simpleValueType": true,
     "name": "id",
     "type": "TEXT"
@@ -63,7 +63,7 @@ ___TEMPLATE_PARAMETERS___
         "type": "NON_EMPTY"
       }
     ],
-    "displayName": "Code Type",
+    "displayName": "Code Type *",
     "simpleValueType": true,
     "name": "codetype",
     "type": "SELECT"
@@ -132,7 +132,8 @@ ___TEMPLATE_PARAMETERS___
             "displayValue": "Standard Variables",
             "value": "vars"
           }
-        ]
+        ],
+        "help": "Measuremet Hub is object oriented standard of dataLayer. Standard variables means separated values for each Sklik parameter."
       },
       {
         "notSetText": "Not set",
@@ -267,12 +268,12 @@ const Math = require('Math');
 if (data.codetype === 'retargeting') {
   let params = {
     'id': data.id,
-    'url': encodeUriComponent(data.url ? data.url : getUrl())
+    'url': data.url ? data.url : getUrl()
   };
 
   let sid = getCookieValues('sid');
   sid = (sid && sid.length) ? sid[0] : '';
-  params.dsid = encodeUriComponent(sid);
+  params.dsid = sid;
 
   
   if (data.model === 'mh') {
@@ -289,22 +290,25 @@ if (data.codetype === 'retargeting') {
     if (data.categorySeznamKey) {
       params.category = data.page[data.categorySeznamKey] || '';
     } else {
-      params.category = ((data.page && data.page.category) ? data.page.category.replace('/', ' | ') : '') || '';
+      params.category = ((data.page && data.page.category) ? data.page.category.replaceAll('/', ' | ') : '') || '';
     }
 
   } else {
     if (data.pagetype) params.pagetype = data.pagetype || '';
     if (data.itemId) params.itemId = data.itemId || '';
-    if (data.category) params.category = data.category || '';
+    if (data.category) params.category = (data.category || '').split('/').join(' | ');
   }
   
   let paramsStr = '';
   for (let key in params) {
-    paramsStr += '&' + key + '=' + params[key];
+    if (params[key])
+      paramsStr += '&' + key + '=' + encodeUriComponent(params[key]);
   }
   let url = 'https://c.imedia.cz/retargeting?' + paramsStr.substring(1);
-  sendPixel(url, () => { data.gtmOnSuccess(); }, () => { data.gtmOnFailure(); });  
-  log('SKLIK RETARGETING', params, url);
+  sendPixel(url, () => {
+    log('SKLIK RETARGETING', params, url);
+    data.gtmOnSuccess(); 
+  }, data.gtmOnFailure);  
 
 
   
@@ -325,7 +329,7 @@ if (data.codetype === 'retargeting') {
     url += '&lsid=' + encodedSid;
     url += '&dsid=' + encodedSid;
   }
-  url += '&url=' + encodeUriComponent(getUrl());
+  url += '&url=' + encodeUriComponent(data.url ? data.url : getUrl());
 
   sendPixel(url, () => {
     data.gtmOnSuccess();
@@ -455,23 +459,105 @@ ___WEB_PERMISSIONS___
 ___TESTS___
 
 scenarios:
-- name: Conversion - success was called
+- name: Conversion - request was sent
   code: |-
-    const mockData = {
-      'codetype': 'conversion',
-      'model': 'vars',
-      'id': 'ID123',
-      'revenue': 99.123,
-      'orderId': 'T_112233'
-    };
-
     mock('sendPixel', function(url, onSuccess, onFailure) {
       assertThat(url).isEqualTo('https://c.imedia.cz/conv?id=ID123&orderId=T_112233&value=99.12&url=https%3A%2F%2Ftagmanager.googleusercontent.com%2Fjs_sandbox_v2.html');
     });
 
 
     // Call runCode to run the template's code.
-    runCode(mockData);
+    runCode(conversionData);
+    assertApi('sendPixel').wasCalled();
+    assertApi('getCookieValues').wasCalled();
+- name: Conversion - URL can be submitted
+  code: |-
+    conversionData.url = 'https://www.example.com/foo?bar=baz';
+
+    mock('sendPixel', function(url, onSuccess, onFailure) {
+      assertThat(url).isEqualTo('https://c.imedia.cz/conv?id=ID123&orderId=T_112233&value=99.12&url=https%3A%2F%2Fwww.example.com%2Ffoo%3Fbar%3Dbaz');
+    });
+
+
+    runCode(conversionData);
+    assertApi('sendPixel').wasCalled();
+- name: Conversion - SID cookie can be readed
+  code: |-
+    mock('sendPixel', function(url, onSuccess, onFailure) {
+      assertThat(url).isEqualTo('https://c.imedia.cz/conv?id=ID123&orderId=T_112233&value=99.12&lsid=ABC%20123&dsid=ABC%20123&url=https%3A%2F%2Ftagmanager.googleusercontent.com%2Fjs_sandbox_v2.html');
+    });
+
+    mock('getCookieValues', ['ABC 123']);
+
+    // Call runCode to run the template's code.
+    runCode(conversionData);
+    assertApi('getCookieValues').wasCalled();
+- name: Retargeting - request was sent
+  code: |-
+    mock('sendPixel', function(url, onSuccess, onFailure) {
+      assertThat(url).isEqualTo('https://c.imedia.cz/retargeting?id=ID123&url=https%3A%2F%2Ftagmanager.googleusercontent.com%2Fjs_sandbox_v2.html');
+    });
+
+    runCode(retargetingData);
+    assertApi('sendPixel').wasCalled();
+- name: Retargeting - SID cookie can be readed
+  code: |-
+    mock('sendPixel', function(url, onSuccess, onFailure) {
+      assertThat(url).isEqualTo('https://c.imedia.cz/retargeting?id=ID123&url=https%3A%2F%2Ftagmanager.googleusercontent.com%2Fjs_sandbox_v2.html&dsid=ABC%20123');
+    });
+
+    mock('getCookieValues', ['ABC 123']);
+
+    runCode(retargetingData);
+    assertApi('sendPixel').wasCalled();
+    assertApi('getCookieValues').wasCalled();
+- name: Retargeting - URL can be submitted
+  code: |-
+    retargetingData.url = 'https://www.example.com/foo?bar=baz';
+    mock('sendPixel', function(url, onSuccess, onFailure) {
+      assertThat(url).isEqualTo('https://c.imedia.cz/retargeting?id=ID123&url=https%3A%2F%2Fwww.example.com%2Ffoo%3Fbar%3Dbaz');
+    });
+
+    runCode(retargetingData);
+    assertApi('sendPixel').wasCalled();
+- name: Retargeting - category page - standard
+  code: |-
+    retargetingData.model = 'vars';
+    retargetingData.pagetype = 'category';
+    retargetingData.category = 'Jidlo/Pecivo/Bile pecivo/Rohliky';
+
+    mock('sendPixel', function(url, onSuccess, onFailure) {
+      assertThat(url).isEqualTo('https://c.imedia.cz/retargeting?id=ID123&url=https%3A%2F%2Ftagmanager.googleusercontent.com%2Fjs_sandbox_v2.html&pagetype=category&category=Jidlo%20%7C%20Pecivo%20%7C%20Bile%20pecivo%20%7C%20Rohliky');
+    });
+
+    runCode(retargetingData);
+    assertApi('sendPixel').wasCalled();
+- name: Retargeting - offerdetail page - standard
+  code: |-
+    retargetingData.model = 'vars';
+    retargetingData.pagetype = 'offerdetail';
+    retargetingData.itemId = 'ITEM_123/4';
+
+    mock('sendPixel', function(url, onSuccess, onFailure) {
+      assertThat(url).isEqualTo('https://c.imedia.cz/retargeting?id=ID123&url=https%3A%2F%2Ftagmanager.googleusercontent.com%2Fjs_sandbox_v2.html&pagetype=offerdetail&itemId=ITEM_123%2F4');
+    });
+
+    runCode(retargetingData);
+    assertApi('sendPixel').wasCalled();
+setup: |-
+  let conversionData = {
+    'codetype': 'conversion',
+    'model': 'vars',
+    'id': 'ID123',
+    'revenue': 99.123,
+    'orderId': 'T_112233'
+  };
+
+
+  let retargetingData = {
+    'id': 'ID123',
+    'codetype': 'retargeting'
+  };
 
 
 ___NOTES___

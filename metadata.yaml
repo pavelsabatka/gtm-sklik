@@ -1,5 +1,5 @@
 homepage: "https://www.houseofrezac.com"
-documentation: "https://www.houseofrezac.com"
+documentation: "https://github.com/pavelsabatka/gtm-sklik"
 versions:
   - sha: 52a23762b679ed05cc6c4b543cbdfaafe5729817
     changeNotes: Initial release.
