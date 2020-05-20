@@ -7,6 +7,8 @@ https://napoveda.sklik.cz/mereni-uspesnosti/konverze/konverzni-kod/
 This template supports the new version of Sklik code from May 2020
 https://blog.seznam.cz/2020/03/prechazime-na-novy-konverzni-kod/
 
+![alt text](https://github.com/pavelsabatka/gtm-sklik/blob/master/conversion.png?raw=true)
+
 ## Retargeting
 Conversion code documentation is on 
 https://napoveda.sklik.cz/cileni/retargeting/retargetingovy-kod/
