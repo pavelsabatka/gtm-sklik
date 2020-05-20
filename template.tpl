@@ -260,6 +260,16 @@ const getUrl = require('getUrl');
 const Math = require('Math');
 
 
+const createQueryString = function(params) {
+  let paramsStr = [];
+  for (let key in params) {
+    if (params[key]) {
+      paramsStr.push(key+'='+encodeUriComponent(''+params[key]));
+    }
+  }
+  return '?' + paramsStr.join('&');
+};
+
 
 if (data.codetype === 'retargeting') {
   let params = {
@@ -295,12 +305,8 @@ if (data.codetype === 'retargeting') {
     if (data.category) params.category = (data.category || '').split('/').join(' | ');
   }
   
-  let paramsStr = '';
-  for (let key in params) {
-    if (params[key])
-      paramsStr += '&' + key + '=' + encodeUriComponent(params[key]);
-  }
-  let url = 'https://c.imedia.cz/retargeting?' + paramsStr.substring(1);
+
+  let url = 'https://c.imedia.cz/retargeting' + createQueryString(params);
   sendPixel(url, () => {
     data.gtmOnSuccess();
     log('SKLIK RETARGETING: status success', params, url);
@@ -314,28 +320,29 @@ if (data.codetype === 'retargeting') {
 
 } else if (data.codetype === 'conversion') {
 
-  let orderId = (data.model === 'mh' ? data.order.id : data.orderId) || '';
   let revenue = (data.model === 'mh' ? data.order.revenue : data.revenue) || null;
+  let params = {
+    'id': data.id,
+    'url': data.url ? data.url : getUrl(),
+    'orderId': (data.model === 'mh' ? data.order.id : data.orderId) || '',
+    'value': (revenue ? (Math.round(revenue*100) / 100) : '')
+  };
+
   let sid = getCookieValues('sid');
   sid = (sid && sid.length) ? sid[0] : '';
-  
-  let url = 'https://c.imedia.cz/conv?id=' + encodeUriComponent(data.id);
-  url += '&orderId=' + encodeUriComponent(orderId);
-  url += '&value=' + (revenue ? (Math.round(revenue*100) / 100) : '');
-
   if (sid) {
-    let encodedSid = encodeUriComponent(sid);
-    url += '&lsid=' + encodedSid;
-    url += '&dsid=' + encodedSid;
+    params.lsid = sid;
+    params.dsid = sid;
   }
-  url += '&url=' + encodeUriComponent(data.url ? data.url : getUrl());
+  
+  let url = 'https://c.imedia.cz/conv' + createQueryString(params);
 
   sendPixel(url, () => {
     data.gtmOnSuccess();
-    log('SKLIK CONVERSION: status success', url, {'id': data.id, 'orderId': orderId, 'revenue': revenue, 'sid': sid});
+    log('SKLIK CONVERSION: status success', url, {'id': data.id, 'params': params});
   }, () => {
     data.gtmOnFailure();
-    log('SKLIK CONVERSION: status failure', url, {'id': data.id, 'orderId': orderId, 'revenue': revenue, 'sid': sid});
+    log('SKLIK CONVERSION: status failure', url, {'id': data.id, 'params': params});
   });
 
 } else {
@@ -461,7 +468,7 @@ scenarios:
 - name: Conversion - request was sent
   code: |-
     mock('sendPixel', function(url, onSuccess, onFailure) {
-      assertThat(url).isEqualTo('https://c.imedia.cz/conv?id=ID123&orderId=T_112233&value=99.12&url=https%3A%2F%2Ftagmanager.googleusercontent.com%2Fjs_sandbox_v2.html');
+      assertThat(url).isEqualTo('https://c.imedia.cz/conv?id=ID123&url=https%3A%2F%2Ftagmanager.googleusercontent.com%2Fjs_sandbox_v2.html&orderId=T_112233&value=99.12');
     });
 
 
@@ -474,7 +481,7 @@ scenarios:
     conversionData.url = 'https://www.example.com/foo?bar=baz';
 
     mock('sendPixel', function(url, onSuccess, onFailure) {
-      assertThat(url).isEqualTo('https://c.imedia.cz/conv?id=ID123&orderId=T_112233&value=99.12&url=https%3A%2F%2Fwww.example.com%2Ffoo%3Fbar%3Dbaz');
+      assertThat(url).isEqualTo('https://c.imedia.cz/conv?id=ID123&url=https%3A%2F%2Fwww.example.com%2Ffoo%3Fbar%3Dbaz&orderId=T_112233&value=99.12');
     });
 
 
@@ -483,7 +490,7 @@ scenarios:
 - name: Conversion - SID cookie can be readed
   code: |-
     mock('sendPixel', function(url, onSuccess, onFailure) {
-      assertThat(url).isEqualTo('https://c.imedia.cz/conv?id=ID123&orderId=T_112233&value=99.12&lsid=ABC%20123&dsid=ABC%20123&url=https%3A%2F%2Ftagmanager.googleusercontent.com%2Fjs_sandbox_v2.html');
+      assertThat(url).isEqualTo('https://c.imedia.cz/conv?id=ID123&url=https%3A%2F%2Ftagmanager.googleusercontent.com%2Fjs_sandbox_v2.html&orderId=T_112233&value=99.12&lsid=ABC%20123&dsid=ABC%20123');
     });
 
     mock('getCookieValues', ['ABC 123']);
