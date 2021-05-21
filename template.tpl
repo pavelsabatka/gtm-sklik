@@ -15,7 +15,7 @@ ___INFO___
     "ANALYTICS",
     "ADVERTISING"
   ],
-  "description": "Conversion \u0026 remarketing code for Sklik. Supporting RC.js code form May 2020.\n@author House of Rezac\n@version 2020-05-19",
+  "description": "Conversion \u0026 remarketing code for Sklik \u0026 Zbozi. Supporting RC.js code form May 2020.\n@author House of Rezac\n@version 2021-05-21",
   "securityGroups": [],
   "id": "cvt_temp_public_id",
   "type": "TAG",
@@ -104,6 +104,51 @@ ___TEMPLATE_PARAMETERS___
         "type": "TEXT",
         "help": "Total revenue of transaction",
         "valueHint": "12345.12"
+      },
+      {
+        "type": "TEXT",
+        "name": "zboziId",
+        "displayName": "Zbozi.cz shop ID",
+        "simpleValueType": true,
+        "valueValidators": [
+          {
+            "type": "REGEX",
+            "args": [
+              "^(|[0-9]{4,10})$"
+            ],
+            "enablingConditions": [],
+            "errorMessage": "Value must be empty or must be numeric"
+          }
+        ]
+      },
+      {
+        "type": "SELECT",
+        "name": "zboziType",
+        "displayName": "Zbozi.cz conversion type",
+        "macrosInSelect": false,
+        "selectItems": [
+          {
+            "value": "standard",
+            "displayValue": "Standard"
+          },
+          {
+            "value": "limited",
+            "displayValue": "Limited"
+          },
+          {
+            "value": "sandbox",
+            "displayValue": "Sandbox"
+          }
+        ],
+        "simpleValueType": true,
+        "enablingConditions": [
+          {
+            "paramName": "zboziId",
+            "paramValue": "",
+            "type": "PRESENT"
+          }
+        ],
+        "defaultValue": "standard"
       }
     ]
   },
@@ -324,6 +369,8 @@ if (data.codetype === 'retargeting') {
   setInWindow('seznam_cId', data.id);
   setInWindow('seznam_value', revenue);
   if (data.orderId) setInWindow('seznam_orderId', data.orderId);
+  if (data.zboziId) setInWindow('seznam_zboziId', data.zboziId);
+  if (data.zboziType) setInWindow('seznam_zboziType', data.zboziType);
   // if (data.url) setInWindow('seznam_url', data.id, true);
 
   
@@ -366,6 +413,9 @@ ___WEB_PERMISSIONS___
           }
         }
       ]
+    },
+    "clientAnnotations": {
+      "isEditedByUser": true
     },
     "isRequired": true
   },
@@ -653,6 +703,84 @@ ___WEB_PERMISSIONS___
                     "boolean": false
                   }
                 ]
+              },
+              {
+                "type": 3,
+                "mapKey": [
+                  {
+                    "type": 1,
+                    "string": "key"
+                  },
+                  {
+                    "type": 1,
+                    "string": "read"
+                  },
+                  {
+                    "type": 1,
+                    "string": "write"
+                  },
+                  {
+                    "type": 1,
+                    "string": "execute"
+                  }
+                ],
+                "mapValue": [
+                  {
+                    "type": 1,
+                    "string": "seznam_zboziId"
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": false
+                  }
+                ]
+              },
+              {
+                "type": 3,
+                "mapKey": [
+                  {
+                    "type": 1,
+                    "string": "key"
+                  },
+                  {
+                    "type": 1,
+                    "string": "read"
+                  },
+                  {
+                    "type": 1,
+                    "string": "write"
+                  },
+                  {
+                    "type": 1,
+                    "string": "execute"
+                  }
+                ],
+                "mapValue": [
+                  {
+                    "type": 1,
+                    "string": "seznam_zboziType"
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": false
+                  }
+                ]
               }
             ]
           }
@@ -710,6 +838,23 @@ scenarios:
     assertApi('setInWindow').wasCalledWith('seznam_cId', 'ID123');
     assertApi('setInWindow').wasCalledWith('seznam_value', 99.12);
     assertApi('setInWindow').wasCalledWith('seznam_orderId', 'T_112233');
+- name: Conversion - zbozi_cz
+  code: |-
+    let zboziData = {
+      'codetype': 'conversion',
+      'id': 'ID123',
+      'revenue': 99.123,
+      'orderId': 'T_112233',
+      'zboziId': '54321',
+      'zboziType': 'standard'
+    };
+
+    // Call runCode to run the template's code.
+    runCode(zboziData);
+
+    // Verify that the tag finished successfully.
+    assertApi('setInWindow').wasCalledWith('seznam_zboziId', '54321');
+    assertApi('setInWindow').wasCalledWith('seznam_zboziType', 'standard');
 - name: Retargeting - request was sent
   code: |-
     runCode(retargetingData);

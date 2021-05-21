@@ -18,6 +18,8 @@ https://napoveda.sklik.cz/cileni/retargeting/retargetingovy-kod/
 * ID - conversion or remarketing ID, expected numeric value like 111111
 * Code Type - select conversion or retargeting
 * URL (Optional) - custom URL can be submitted, real URL is used if not set
+* Zbozi Shop ID (Optional) - shop ID from aministration https://admin.zbozi.cz/
+* Zbozi Code Type (Optional) - type of conversion code - Standard, Limited or Sandbox
 
 ### Conversion specific
 * Order ID - uniquie ID of conversion
