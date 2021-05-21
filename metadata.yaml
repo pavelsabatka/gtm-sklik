@@ -2,10 +2,13 @@ homepage: "https://www.houseofrezac.com"
 documentation: "https://github.com/pavelsabatka/gtm-sklik"
 versions:
   # Latest version
+  - sha: a79c1d2a9879a05fae96957ca2ff7d1df9f586ca
+    changeNotes: added support for zbozi.cz
+
+  # Older versions  
   - sha: efcac96b8d6c904cfed82697ed7b983873f91e7f
     changeNotes: injecting Sklik scripts instead of sending pixels
 
-  # Older versions
   - sha: 26dfa1253a0be55cae934ef1ac82c98c5202ba94
     changeNotes: Query permissions, update help texts
   
