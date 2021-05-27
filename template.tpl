@@ -292,15 +292,16 @@ ___TEMPLATE_PARAMETERS___
         "name": "category",
         "type": "TEXT",
         "canBeEmptyString": false
+      },
+      {
+        "displayName": "Custom URL",
+        "simpleValueType": true,
+        "name": "url",
+        "type": "TEXT",
+        "canBeEmptyString": true,
+        "help": "Virtual URL can be set here. You can use it e.g. for scroll tracking or targeting to JS executed actions on page."
       }
     ]
-  },
-  {
-    "displayName": "URL",
-    "simpleValueType": true,
-    "name": "url",
-    "type": "TEXT",
-    "canBeEmptyString": true
   }
 ]
 
@@ -318,6 +319,10 @@ const Math = require('Math');
 if (data.codetype === 'retargeting') {
   
   setInWindow('seznam_retargeting_id', data.id);
+  
+  if (data.url) {
+    setInWindow('seznam_rtgUrl', data.url, true);
+  }
   
 
   if (data.model === 'mh') {
@@ -342,7 +347,7 @@ if (data.codetype === 'retargeting') {
     if (data.itemId) setInWindow('seznam_itemId', data.itemId || '');
     if (data.category) setInWindow('seznam_category', (data.category || '').split('/').join(' | '));
   }
-  // if (data.url) setInWindow('seznam_retargeting_url', data.id, true);
+
   
   
   const url = 'https://c.imedia.cz/js/retargeting.js';
@@ -371,7 +376,6 @@ if (data.codetype === 'retargeting') {
   if (data.orderId) setInWindow('seznam_orderId', data.orderId);
   if (data.zboziId) setInWindow('seznam_zboziId', data.zboziId);
   if (data.zboziType) setInWindow('seznam_zboziType', data.zboziType);
-  // if (data.url) setInWindow('seznam_url', data.id, true);
 
   
   const url = 'https://www.seznam.cz/rs/static/rc.js';
@@ -781,6 +785,45 @@ ___WEB_PERMISSIONS___
                     "boolean": false
                   }
                 ]
+              },
+              {
+                "type": 3,
+                "mapKey": [
+                  {
+                    "type": 1,
+                    "string": "key"
+                  },
+                  {
+                    "type": 1,
+                    "string": "read"
+                  },
+                  {
+                    "type": 1,
+                    "string": "write"
+                  },
+                  {
+                    "type": 1,
+                    "string": "execute"
+                  }
+                ],
+                "mapValue": [
+                  {
+                    "type": 1,
+                    "string": "seznam_rtgUrl"
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": false
+                  }
+                ]
               }
             ]
           }
@@ -883,6 +926,13 @@ scenarios:
     runCode(retargetingData);
     assertApi('setInWindow').wasCalledWith('seznam_pagetype', 'offerdetail');
     assertApi('setInWindow').wasCalledWith('seznam_itemId', 'ITEM_123/4');
+- name: Retargeting - custom URL
+  code: |-
+    retargetingData.url = 'https://example.com/foo?bar=1';
+
+    runCode(retargetingData);
+
+    assertApi('setInWindow').wasCalledWith('seznam_rtgUrl', 'https://example.com/foo?bar=1', true);
 setup: |-
   let conversionData = {
     'codetype': 'conversion',
