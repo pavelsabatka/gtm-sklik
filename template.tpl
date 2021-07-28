@@ -15,7 +15,7 @@ ___INFO___
     "ANALYTICS",
     "ADVERTISING"
   ],
-  "description": "Conversion \u0026 remarketing code for Sklik \u0026 Zbozi. Supporting RC.js code form May 2020.\n@author House of Rezac\n@version 2021-05-21",
+  "description": "Conversion \u0026 remarketing code for Sklik \u0026 Zbozi. Supporting RC.js code form May 2020.\n@author House of Rezac\n@version 2021-07-28",
   "securityGroups": [],
   "id": "cvt_temp_public_id",
   "type": "TAG",
@@ -300,6 +300,14 @@ ___TEMPLATE_PARAMETERS___
         "type": "TEXT",
         "canBeEmptyString": true,
         "help": "Virtual URL can be set here. You can use it e.g. for scroll tracking or targeting to JS executed actions on page."
+      },
+      {
+        "type": "CHECKBOX",
+        "name": "multipleHitsPerPage",
+        "checkboxText": "Enable sending multiple hits on page",
+        "simpleValueType": true,
+        "defaultValue": false,
+        "help": "In default state Sklik retargeting enables sending only one rquest per page. If this checkbox is true multiple requests can be sent on one page."
       }
     ]
   }
@@ -310,6 +318,7 @@ ___SANDBOXED_JS_FOR_WEB_TEMPLATE___
 
 const log = require('logToConsole');
 const setInWindow = require('setInWindow');
+const copyFromWindow = require('copyFromWindow');
 const injectScript = require('injectScript');
 const queryPermission = require('queryPermission');
 const Math = require('Math');
@@ -317,6 +326,19 @@ const Math = require('Math');
 
 
 if (data.codetype === 'retargeting') {
+  
+  // enable running code multiple times on single page
+  if (data.multipleHitsPerPage) {
+    let dispatched = copyFromWindow('seznam_dispatchedRetargetingIds');
+    if (dispatched) {
+      for (let i = 0; i < dispatched.length; i++) {
+        if (dispatched[i] == data.id) {
+          dispatched.splice(i, 1);
+        }
+      }
+      setInWindow('seznam_dispatchedRetargetingIds', dispatched);
+    }
+  }
   
   setInWindow('seznam_retargeting_id', data.id);
   
@@ -824,6 +846,45 @@ ___WEB_PERMISSIONS___
                     "boolean": false
                   }
                 ]
+              },
+              {
+                "type": 3,
+                "mapKey": [
+                  {
+                    "type": 1,
+                    "string": "key"
+                  },
+                  {
+                    "type": 1,
+                    "string": "read"
+                  },
+                  {
+                    "type": 1,
+                    "string": "write"
+                  },
+                  {
+                    "type": 1,
+                    "string": "execute"
+                  }
+                ],
+                "mapValue": [
+                  {
+                    "type": 1,
+                    "string": "seznam_dispatchedRetargetingIds"
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": false
+                  }
+                ]
               }
             ]
           }
@@ -933,6 +994,15 @@ scenarios:
     runCode(retargetingData);
 
     assertApi('setInWindow').wasCalledWith('seznam_rtgUrl', 'https://example.com/foo?bar=1', true);
+- name: Retargeting - enable multiple hits
+  code: |-
+    mock('copyFromWindow', ['OTHER_ID_1', 'OTHER_ID_2', 'ID123', 'OTHER_ID_3']);
+    retargetingData.url = 'https://example.com/foo?bar=1';
+    retargetingData.multipleHitsPerPage = true;
+
+    runCode(retargetingData);
+
+    assertApi('setInWindow').wasCalledWith('seznam_dispatchedRetargetingIds', ['OTHER_ID_1', 'OTHER_ID_2', 'OTHER_ID_3']);
 setup: |-
   let conversionData = {
     'codetype': 'conversion',
@@ -944,7 +1014,8 @@ setup: |-
 
   let retargetingData = {
     'id': 'ID123',
-    'codetype': 'retargeting'
+    'codetype': 'retargeting',
+    'multipleHitsPerPage': false
   };
 
 
