@@ -336,7 +336,7 @@ if (data.codetype === 'retargeting') {
           dispatched.splice(i, 1);
         }
       }
-      setInWindow('seznam_dispatchedRetargetingIds', dispatched);
+      setInWindow('seznam_dispatchedRetargetingIds', dispatched, true);
     }
   }
   
@@ -1002,7 +1002,7 @@ scenarios:
 
     runCode(retargetingData);
 
-    assertApi('setInWindow').wasCalledWith('seznam_dispatchedRetargetingIds', ['OTHER_ID_1', 'OTHER_ID_2', 'OTHER_ID_3']);
+    assertApi('setInWindow').wasCalledWith('seznam_dispatchedRetargetingIds', ['OTHER_ID_1', 'OTHER_ID_2', 'OTHER_ID_3'], true);
 setup: |-
   let conversionData = {
     'codetype': 'conversion',
