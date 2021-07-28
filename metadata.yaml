@@ -2,10 +2,13 @@ homepage: "https://www.houseofrezac.com"
 documentation: "https://github.com/pavelsabatka/gtm-sklik"
 versions:
   # Latest version
-  - sha: 890a8dd1971a815f821b9cc3aebdbb5077a893a7
-    changeNotes: multiple codes with same ID on 1 page enabled
+  - sha: 06e246ce75d7aff25996ed2bbf7f6751aad0e6eb
+    changeNotes: minor fix of previous version
 
   # Older versions  
+  - sha: 890a8dd1971a815f821b9cc3aebdbb5077a893a7
+    changeNotes: multiple codes with same ID on 1 page enabled
+  
   - sha: d60443fc271d70cd6c2a88ed5d32efb1c791470f
     changeNotes: added support for custom retargeting URLs
   
