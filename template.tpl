@@ -322,68 +322,94 @@ const copyFromWindow = require('copyFromWindow');
 const injectScript = require('injectScript');
 const queryPermission = require('queryPermission');
 const Math = require('Math');
+const isConsentGranted = require('isConsentGranted');
+const addConsentListener = require('addConsentListener');
 
 
 
 if (data.codetype === 'retargeting') {
   
-  // enable running code multiple times on single page
-  if (data.multipleHitsPerPage) {
-    let dispatched = copyFromWindow('seznam_dispatchedRetargetingIds');
-    if (dispatched) {
-      for (let i = 0; i < dispatched.length; i++) {
-        if (dispatched[i] == data.id) {
-          dispatched.splice(i, 1);
+  
+  
+  const runRemarketing = function(data) {
+    log('SKLIK RETARGETING: preparing request', data);
+    // enable running code multiple times on single page
+    if (data.multipleHitsPerPage) {
+      let dispatched = copyFromWindow('seznam_dispatchedRetargetingIds');
+      if (dispatched) {
+        for (let i = 0; i < dispatched.length; i++) {
+          if (dispatched[i] == data.id) {
+            dispatched.splice(i, 1);
+          }
+        }
+        setInWindow('seznam_dispatchedRetargetingIds', dispatched, true);
+      }
+    }
+    
+    setInWindow('seznam_retargeting_id', data.id);
+    
+    if (data.url) {
+      setInWindow('seznam_rtgUrl', data.url, true);
+    }
+    
+
+    if (data.model === 'mh') {
+      if (data.page && data.page.type) {
+        if (data.page.type.indexOf('detail') > -1) {
+          setInWindow('seznam_pagetype', 'offerdetail');
+        } else if (data.page.type.indexOf('category') > -1) {
+          setInWindow('seznam_pagetype', 'category');
         }
       }
-      setInWindow('seznam_dispatchedRetargetingIds', dispatched, true);
-    }
-  }
-  
-  setInWindow('seznam_retargeting_id', data.id);
-  
-  if (data.url) {
-    setInWindow('seznam_rtgUrl', data.url, true);
-  }
-  
-
-  if (data.model === 'mh') {
-    if (data.page && data.page.type) {
-      if (data.page.type.indexOf('detail') > -1) {
-        setInWindow('seznam_pagetype', 'offerdetail');
-      } else if (data.page.type.indexOf('category') > -1) {
-        setInWindow('seznam_pagetype', 'category');
+      if (data.products && data.products.length) {
+        setInWindow('seznam_itemId', data.products[0].id || '');
       }
-    }
-    if (data.products && data.products.length) {
-      setInWindow('seznam_itemId', data.products[0].id || '');
-    }
-    if (data.categorySeznamKey) {
-      setInWindow('seznam_category', data.page[data.categorySeznamKey] || '');
+      if (data.categorySeznamKey) {
+        setInWindow('seznam_category', data.page[data.categorySeznamKey] || '');
+      } else {
+        setInWindow('seznam_category', ((data.page && data.page.category) ? data.page.category.replaceAll('/', ' | ') : '') || '');
+      }
+
     } else {
-      setInWindow('seznam_category', ((data.page && data.page.category) ? data.page.category.replaceAll('/', ' | ') : '') || '');
+      if (data.pagetype) setInWindow('seznam_pagetype', data.pagetype || '');
+      if (data.itemId) setInWindow('seznam_itemId', data.itemId || '');
+      if (data.category) setInWindow('seznam_category', (data.category || '').split('/').join(' | '));
     }
 
-  } else {
-    if (data.pagetype) setInWindow('seznam_pagetype', data.pagetype || '');
-    if (data.itemId) setInWindow('seznam_itemId', data.itemId || '');
-    if (data.category) setInWindow('seznam_category', (data.category || '').split('/').join(' | '));
-  }
-
-  
-  
-  const url = 'https://c.imedia.cz/js/retargeting.js';
-  if (queryPermission('inject_script', url)) {
-    injectScript(url, () => {
-      data.gtmOnSuccess();
-      log('SKLIK RETARGETING: status success', data);
-    }, () => {
+    
+    
+    const url = 'https://c.imedia.cz/js/retargeting.js';
+    if (queryPermission('inject_script', url)) {
+      injectScript(url, () => {
+        data.gtmOnSuccess();
+        log('SKLIK RETARGETING: status success', data);
+      }, () => {
+        data.gtmOnFailure();
+        log('SKLIK RETARGETING: status failure', data);
+      });
+    } else {
       data.gtmOnFailure();
-      log('SKLIK RETARGETING: status failure', data);
+      log('SKLIK RETARGETING: status failure: request not allowed', data);
+    }
+  };
+  
+  
+  
+  if (!isConsentGranted('ad_storage')) {
+    addConsentListener('ad_storage', (consentType, granted) => {
+      if (!granted) return;
+      var datas = copyFromWindow('seznam_rmkt_queue') || [];
+      for (let i = 0; i < datas.length; i++) {
+        runRemarketing(datas[i]);
+      }
+      setInWindow('seznam_rmkt_queue', [], true);
     });
+    var datas = copyFromWindow('seznam_rmkt_queue') || [];
+    log('SKLIK RETARGETING: consent not granted, adding to a queue', data, datas);
+    datas.push(data);
+    setInWindow('seznam_rmkt_queue', datas, true);
   } else {
-    data.gtmOnFailure();
-    log('SKLIK RETARGETING: status failure: request not allowed', data);
+    runRemarketing(data);
   }
 
 
@@ -885,6 +911,45 @@ ___WEB_PERMISSIONS___
                     "boolean": false
                   }
                 ]
+              },
+              {
+                "type": 3,
+                "mapKey": [
+                  {
+                    "type": 1,
+                    "string": "key"
+                  },
+                  {
+                    "type": 1,
+                    "string": "read"
+                  },
+                  {
+                    "type": 1,
+                    "string": "write"
+                  },
+                  {
+                    "type": 1,
+                    "string": "execute"
+                  }
+                ],
+                "mapValue": [
+                  {
+                    "type": 1,
+                    "string": "seznam_rmkt_queue"
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": false
+                  }
+                ]
               }
             ]
           }
@@ -915,6 +980,59 @@ ___WEB_PERMISSIONS___
               {
                 "type": 1,
                 "string": "https://www.seznam.cz/"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "clientAnnotations": {
+      "isEditedByUser": true
+    },
+    "isRequired": true
+  },
+  {
+    "instance": {
+      "key": {
+        "publicId": "access_consent",
+        "versionId": "1"
+      },
+      "param": [
+        {
+          "key": "consentTypes",
+          "value": {
+            "type": 2,
+            "listItem": [
+              {
+                "type": 3,
+                "mapKey": [
+                  {
+                    "type": 1,
+                    "string": "consentType"
+                  },
+                  {
+                    "type": 1,
+                    "string": "read"
+                  },
+                  {
+                    "type": 1,
+                    "string": "write"
+                  }
+                ],
+                "mapValue": [
+                  {
+                    "type": 1,
+                    "string": "ad_storage"
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": false
+                  }
+                ]
               }
             ]
           }
@@ -1003,6 +1121,16 @@ scenarios:
     runCode(retargetingData);
 
     assertApi('setInWindow').wasCalledWith('seznam_dispatchedRetargetingIds', ['OTHER_ID_1', 'OTHER_ID_2', 'OTHER_ID_3'], true);
+- name: Retargeting - consent granted
+  code: |-
+    mock('isConsentGranted', true);
+    runCode(retargetingData);
+    assertApi('injectScript').wasCalled();
+- name: Retargeting - consent denied
+  code: |-
+    mock('isConsentGranted', false);
+    runCode(retargetingData);
+    assertApi('injectScript').wasNotCalled();
 setup: |-
   let conversionData = {
     'codetype': 'conversion',
