@@ -2,16 +2,12 @@
 Template supports conversion and remarketing code.
 
 ## Conversion
-Conversion code documentation is on 
-https://napoveda.sklik.cz/mereni-uspesnosti/konverze/konverzni-kod/
-This template supports the new version of Sklik code from May 2020
-https://blog.seznam.cz/2020/03/prechazime-na-novy-konverzni-kod/
+[Conversion code documentation](https://napoveda.sklik.cz/mereni-uspesnosti/konverze/konverzni-kod/)
 
 ![alt text](https://github.com/pavelsabatka/gtm-sklik/blob/master/conversion.png?raw=true)
 
 ## Retargeting
-Conversion code documentation is on 
-https://napoveda.sklik.cz/cileni/retargeting/retargetingovy-kod/
+[Retargeting code documentation](https://napoveda.sklik.cz/cileni/retargeting/retargetingovy-kod/)
 
 # Params
 ### Universal params
@@ -21,12 +17,12 @@ https://napoveda.sklik.cz/cileni/retargeting/retargetingovy-kod/
 ### Conversion specific
 * `Order ID` - uniquie ID of conversion
 * `Revenue` - revenue of conversion
-* `Zbozi Shop ID` (Optional) - shop ID from aministration https://admin.zbozi.cz/
+* `Zbozi Shop ID` (Optional) - shop ID from [zbozi.cz aministration](https://admin.zbozi.cz/)
 * `Zbozi Code Type` (Optional) - type of conversion code - Standard, Limited or Sandbox
 
 ### Retargeting specific
 * `Model type` - Standard variables (1 param = 1 input) or Measurement Hub (readed from object)
 * `Page type` - Category (product or service list) or Offer detail
-* `Category` - category name, only for category pages
-* `Item ID` - product ID, only for Offer detail pages
+* `Category` - [category name](https://napoveda.sklik.cz/cileni/retargeting/pokrocile-nastaveni-rtg-kodu-u-kategorie-category/), only for category pages
+* `Item ID` - [product ID](https://napoveda.sklik.cz/cileni/retargeting/pokrocile-nastaveni-retargetingoveho-kodu/), only for Offer detail pages
 * `URL` (Optional) - URL with virtual query params can be submitted here. Hostname and pathname must be same as real url. Parametr [documentation](https://napoveda.sklik.cz/cileni/retargeting/pokrocile-nastaveni-rtg-kodu-volitelny-query-string/), example for [Sklik remarketing based on time on page](https://napoveda.sklik.cz/cileni/retargeting/pokrocile-nastaveni-rtg-kodu-dle-doby-stravene-na-webu/)
