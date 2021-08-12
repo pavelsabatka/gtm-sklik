@@ -15,7 +15,7 @@ ___INFO___
     "ANALYTICS",
     "ADVERTISING"
   ],
-  "description": "Conversion \u0026 remarketing code for Sklik \u0026 Zbozi. Supporting RC.js code form May 2020.\n@author House of Rezac\n@version 2021-07-28",
+  "description": "Conversion \u0026 remarketing code for Sklik \u0026 Zbozi. Supporting RC.js code form May 2020.\n@author House of Rezac\n@version 2021-08-12",
   "securityGroups": [],
   "id": "cvt_temp_public_id",
   "type": "TAG",
@@ -299,15 +299,7 @@ ___TEMPLATE_PARAMETERS___
         "name": "url",
         "type": "TEXT",
         "canBeEmptyString": true,
-        "help": "Virtual URL can be set here. You can use it e.g. for scroll tracking or targeting to JS executed actions on page."
-      },
-      {
-        "type": "CHECKBOX",
-        "name": "multipleHitsPerPage",
-        "checkboxText": "Enable sending multiple hits on page",
-        "simpleValueType": true,
-        "defaultValue": false,
-        "help": "In default state Sklik retargeting enables sending only one rquest per page. If this checkbox is true multiple requests can be sent on one page."
+        "help": "Custom params can be put into URL here. Hostname and pathname of Custom URL must be same as real URL! Otherwise Sklik will not accept this parameter.\nYou can use it e.g. for scroll tracking or targeting to JS executed actions on page."
       }
     ]
   }
@@ -319,6 +311,7 @@ ___SANDBOXED_JS_FOR_WEB_TEMPLATE___
 const log = require('logToConsole');
 const setInWindow = require('setInWindow');
 const copyFromWindow = require('copyFromWindow');
+const callInWindow = require('callInWindow');
 const injectScript = require('injectScript');
 const queryPermission = require('queryPermission');
 const Math = require('Math');
@@ -333,63 +326,68 @@ if (data.codetype === 'retargeting') {
   
   const runRemarketing = function(data) {
     log('SKLIK RETARGETING: preparing request', data);
-    // enable running code multiple times on single page
-    if (data.multipleHitsPerPage) {
-      let dispatched = copyFromWindow('seznam_dispatchedRetargetingIds');
-      if (dispatched) {
-        for (let i = 0; i < dispatched.length; i++) {
-          if (dispatched[i] == data.id) {
-            dispatched.splice(i, 1);
-          }
-        }
-        setInWindow('seznam_dispatchedRetargetingIds', dispatched, true);
-      }
-    }
-    
-    setInWindow('seznam_retargeting_id', data.id);
+    let params = {
+      'rtgId': data.id
+    };
     
     if (data.url) {
-      setInWindow('seznam_rtgUrl', data.url, true);
+      params.rtgUrl = data.url;
     }
     
 
     if (data.model === 'mh') {
       if (data.page && data.page.type) {
         if (data.page.type.indexOf('detail') > -1) {
-          setInWindow('seznam_pagetype', 'offerdetail');
+          params.pageType = 'offerdetail';
         } else if (data.page.type.indexOf('category') > -1) {
-          setInWindow('seznam_pagetype', 'category');
+          params.pageType = 'category';
         }
       }
       if (data.products && data.products.length) {
-        setInWindow('seznam_itemId', data.products[0].id || '');
+        params.itemId = data.products[0].id || '';
       }
       if (data.categorySeznamKey) {
-        setInWindow('seznam_category', data.page[data.categorySeznamKey] || '');
+        params.category = data.page[data.categorySeznamKey] || '';
       } else {
-        setInWindow('seznam_category', ((data.page && data.page.category) ? data.page.category.replaceAll('/', ' | ') : '') || '');
+        params.category = ((data.page && data.page.category) ? data.page.category.replaceAll('/', ' | ') : '') || '';
       }
 
     } else {
-      if (data.pagetype) setInWindow('seznam_pagetype', data.pagetype || '');
-      if (data.itemId) setInWindow('seznam_itemId', data.itemId || '');
-      if (data.category) setInWindow('seznam_category', (data.category || '').split('/').join(' | '));
+      if (data.pagetype) params.pageType = data.pagetype || '';
+      if (data.itemId) params.itemId = data.itemId || '';
+      if (data.category) params.category = (data.category || '').split('/').join(' | ');
     }
 
     
-    
-    const url = 'https://c.imedia.cz/js/retargeting.js';
-    if (queryPermission('inject_script', url)) {
-      injectScript(url, () => {
-        data.gtmOnSuccess();
-        log('SKLIK RETARGETING: status success', data);
-      }, () => {
+    const sendHit = (params) => {
+      if (!copyFromWindow('rc.retargetingHit')) {
+        log('SKLIK RETARGETING: failure, rc.retargetingHit method is not created', params);
         data.gtmOnFailure();
-        log('SKLIK RETARGETING: status failure', data);
-      });
+      } else {
+        callInWindow('rc.retargetingHit', params);
+        data.gtmOnSuccess();
+        log('SKLIK RETARGETING: status success', params);
+      }
+    };
+    
+
+    if (copyFromWindow('seznam_rmkt_loaded')) {
+      sendHit(params);
     } else {
-      data.gtmOnFailure();
-      log('SKLIK RETARGETING: status failure: request not allowed', data);
+      const url = 'https://c.imedia.cz/js/retargeting.js';
+      if (queryPermission('inject_script', url)) {
+        injectScript(url, () => {
+          log('SKLIK RETARGETING: loading script success', params);
+          setInWindow('seznam_rmkt_loaded', true, true);
+          sendHit(params);
+        }, () => {
+          data.gtmOnFailure();
+          log('SKLIK RETARGETING: loading script failure', params);
+        });
+      } else {
+        data.gtmOnFailure();
+        log('SKLIK RETARGETING: status failure: request not allowed', params);
+      }
     }
   };
   
@@ -507,123 +505,6 @@ ___WEB_PERMISSIONS___
                   {
                     "type": 1,
                     "string": "seznam_retargeting_id"
-                  },
-                  {
-                    "type": 8,
-                    "boolean": true
-                  },
-                  {
-                    "type": 8,
-                    "boolean": true
-                  },
-                  {
-                    "type": 8,
-                    "boolean": false
-                  }
-                ]
-              },
-              {
-                "type": 3,
-                "mapKey": [
-                  {
-                    "type": 1,
-                    "string": "key"
-                  },
-                  {
-                    "type": 1,
-                    "string": "read"
-                  },
-                  {
-                    "type": 1,
-                    "string": "write"
-                  },
-                  {
-                    "type": 1,
-                    "string": "execute"
-                  }
-                ],
-                "mapValue": [
-                  {
-                    "type": 1,
-                    "string": "seznam_pagetype"
-                  },
-                  {
-                    "type": 8,
-                    "boolean": true
-                  },
-                  {
-                    "type": 8,
-                    "boolean": true
-                  },
-                  {
-                    "type": 8,
-                    "boolean": false
-                  }
-                ]
-              },
-              {
-                "type": 3,
-                "mapKey": [
-                  {
-                    "type": 1,
-                    "string": "key"
-                  },
-                  {
-                    "type": 1,
-                    "string": "read"
-                  },
-                  {
-                    "type": 1,
-                    "string": "write"
-                  },
-                  {
-                    "type": 1,
-                    "string": "execute"
-                  }
-                ],
-                "mapValue": [
-                  {
-                    "type": 1,
-                    "string": "seznam_itemId"
-                  },
-                  {
-                    "type": 8,
-                    "boolean": true
-                  },
-                  {
-                    "type": 8,
-                    "boolean": true
-                  },
-                  {
-                    "type": 8,
-                    "boolean": false
-                  }
-                ]
-              },
-              {
-                "type": 3,
-                "mapKey": [
-                  {
-                    "type": 1,
-                    "string": "key"
-                  },
-                  {
-                    "type": 1,
-                    "string": "read"
-                  },
-                  {
-                    "type": 1,
-                    "string": "write"
-                  },
-                  {
-                    "type": 1,
-                    "string": "execute"
-                  }
-                ],
-                "mapValue": [
-                  {
-                    "type": 1,
-                    "string": "seznam_category"
                   },
                   {
                     "type": 8,
@@ -857,7 +738,7 @@ ___WEB_PERMISSIONS___
                 "mapValue": [
                   {
                     "type": 1,
-                    "string": "seznam_rtgUrl"
+                    "string": "rc"
                   },
                   {
                     "type": 8,
@@ -865,7 +746,7 @@ ___WEB_PERMISSIONS___
                   },
                   {
                     "type": 8,
-                    "boolean": true
+                    "boolean": false
                   },
                   {
                     "type": 8,
@@ -896,11 +777,7 @@ ___WEB_PERMISSIONS___
                 "mapValue": [
                   {
                     "type": 1,
-                    "string": "seznam_dispatchedRetargetingIds"
-                  },
-                  {
-                    "type": 8,
-                    "boolean": true
+                    "string": "rc.retargetingHit"
                   },
                   {
                     "type": 8,
@@ -909,6 +786,10 @@ ___WEB_PERMISSIONS___
                   {
                     "type": 8,
                     "boolean": false
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
                   }
                 ]
               },
@@ -936,6 +817,45 @@ ___WEB_PERMISSIONS___
                   {
                     "type": 1,
                     "string": "seznam_rmkt_queue"
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": false
+                  }
+                ]
+              },
+              {
+                "type": 3,
+                "mapKey": [
+                  {
+                    "type": 1,
+                    "string": "key"
+                  },
+                  {
+                    "type": 1,
+                    "string": "read"
+                  },
+                  {
+                    "type": 1,
+                    "string": "write"
+                  },
+                  {
+                    "type": 1,
+                    "string": "execute"
+                  }
+                ],
+                "mapValue": [
+                  {
+                    "type": 1,
+                    "string": "seznam_rmkt_loaded"
                   },
                   {
                     "type": 8,
@@ -1081,20 +1001,46 @@ scenarios:
   code: |-
     runCode(retargetingData);
     assertApi('injectScript').wasCalled();
-- name: Retargeting - ID variable was set
+- name: Retargeting - basic retargeting
   code: |-
+    mock('injectScript', function(url, onSuccess, onFailure) {
+      onSuccess();
+    });
+    mock('copyFromWindow', (name) => {
+      if (name === 'rc.retargetingHit') return function() {};
+    });
+
+
+    let expected = {
+      'rtgId': 'ID123'
+    };
+
     runCode(retargetingData);
-    assertApi('setInWindow').wasCalledWith('seznam_retargeting_id', 'ID123');
+
+    assertApi('callInWindow').wasCalledWith('rc.retargetingHit', expected);
 - name: Retargeting - category page - standard
   code: |-
+    mock('injectScript', function(url, onSuccess, onFailure) {
+      onSuccess();
+    });
+    mock('copyFromWindow', (name) => {
+      if (name === 'rc.retargetingHit') return function() {};
+    });
+
+
     retargetingData.model = 'vars';
     retargetingData.pagetype = 'category';
     retargetingData.category = 'Jidlo/Pecivo/Bile pecivo/Rohliky';
 
+    let expected = {
+      'rtgId': 'ID123',
+      'pageType': 'category',
+      'category': 'Jidlo | Pecivo | Bile pecivo | Rohliky',
+    };
 
     runCode(retargetingData);
-    assertApi('setInWindow').wasCalledWith('seznam_pagetype', 'category');
-    assertApi('setInWindow').wasCalledWith('seznam_category', 'Jidlo | Pecivo | Bile pecivo | Rohliky');
+
+    assertApi('callInWindow').wasCalledWith('rc.retargetingHit', expected);
 - name: Retargeting - offerdetail page - standard
   code: |-
     retargetingData.model = 'vars';
@@ -1102,27 +1048,48 @@ scenarios:
     retargetingData.itemId = 'ITEM_123/4';
 
 
+
+    mock('injectScript', function(url, onSuccess, onFailure) {
+      onSuccess();
+    });
+    mock('copyFromWindow', (name) => {
+      if (name === 'rc.retargetingHit') return function() {};
+    });
+
+    let expected = {
+      'rtgId': 'ID123',
+      'pageType': 'offerdetail',
+      'itemId': 'ITEM_123/4'
+    };
+
     runCode(retargetingData);
-    assertApi('setInWindow').wasCalledWith('seznam_pagetype', 'offerdetail');
-    assertApi('setInWindow').wasCalledWith('seznam_itemId', 'ITEM_123/4');
+
+    assertApi('callInWindow').wasCalledWith('rc.retargetingHit', expected);
 - name: Retargeting - custom URL
   code: |-
     retargetingData.url = 'https://example.com/foo?bar=1';
 
+    mock('injectScript', function(url, onSuccess, onFailure) {
+      onSuccess();
+    });
+    mock('copyFromWindow', (name) => {
+      if (name === 'rc.retargetingHit') return function() {};
+    });
+
+    let expected = {
+      'rtgId': 'ID123',
+      'rtgUrl': 'https://example.com/foo?bar=1'
+    };
+
     runCode(retargetingData);
 
-    assertApi('setInWindow').wasCalledWith('seznam_rtgUrl', 'https://example.com/foo?bar=1', true);
-- name: Retargeting - enable multiple hits
-  code: |-
-    mock('copyFromWindow', ['OTHER_ID_1', 'OTHER_ID_2', 'ID123', 'OTHER_ID_3']);
-    retargetingData.url = 'https://example.com/foo?bar=1';
-    retargetingData.multipleHitsPerPage = true;
-
-    runCode(retargetingData);
-
-    assertApi('setInWindow').wasCalledWith('seznam_dispatchedRetargetingIds', ['OTHER_ID_1', 'OTHER_ID_2', 'OTHER_ID_3'], true);
+    assertApi('callInWindow').wasCalledWith('rc.retargetingHit', expected);
 - name: Retargeting - consent granted
   code: |-
+    mock('copyFromWindow', (name) => {
+      if (name === 'rc.retargetingHit') return function() {};
+      if (name === 'seznam_rmkt_loaded') return false;
+    });
     mock('isConsentGranted', true);
     runCode(retargetingData);
     assertApi('injectScript').wasCalled();
