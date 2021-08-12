@@ -29,4 +29,4 @@ https://napoveda.sklik.cz/cileni/retargeting/retargetingovy-kod/
 * `Page type` - Category (product or service list) or Offer detail
 * `Category` - category name, only for category pages
 * `Item ID` - product ID, only for Offer detail pages
-* `URL` (Optional) - custom URL can be submitted, real URL is used if not set. Parametr [documentation](https://napoveda.sklik.cz/cileni/retargeting/pokrocile-nastaveni-rtg-kodu-volitelny-query-string/), example for [Sklik remarketing based on time on page](https://napoveda.sklik.cz/cileni/retargeting/pokrocile-nastaveni-rtg-kodu-dle-doby-stravene-na-webu/)
+* `URL` (Optional) - URL with virtual query params can be submitted here. Hostname and pathname must be same as real url. Parametr [documentation](https://napoveda.sklik.cz/cileni/retargeting/pokrocile-nastaveni-rtg-kodu-volitelny-query-string/), example for [Sklik remarketing based on time on page](https://napoveda.sklik.cz/cileni/retargeting/pokrocile-nastaveni-rtg-kodu-dle-doby-stravene-na-webu/)
