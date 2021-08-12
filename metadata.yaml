@@ -2,10 +2,13 @@ homepage: "https://www.houseofrezac.com"
 documentation: "https://github.com/pavelsabatka/gtm-sklik"
 versions:
   # Latest version
+  - sha: 88f7ff9e464b083ab63b952bcc0c6476b717c1d5
+    changeNotes: Sending remarketing hits via rc.sentRemarketingHit method
+
+  # Older versions
   - sha: 3713a712de115226d0448fb85d1611fb0cb815b0
     changeNotes: support consent for remarketing
 
-  # Older versions
   - sha: 06e246ce75d7aff25996ed2bbf7f6751aad0e6eb
     changeNotes: minor fix of previous version
   
