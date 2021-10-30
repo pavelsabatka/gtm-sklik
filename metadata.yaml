@@ -2,10 +2,14 @@ homepage: "https://www.houseofrezac.com"
 documentation: "https://github.com/pavelsabatka/gtm-sklik"
 versions:
   # Latest version
-  - sha: c60d8f128cac2be5f5c52ba33566aece35d41305
-    changeNotes: Sending remarketing hits via rc.sentRemarketingHit method - minor fix
+  - sha: ff8cbbf1913ac631d8e1b77cafd555a68ae32128
+    changeNotes: Support for consent mode, ad_storage and analytics_storage consents are required
+
 
   # Older versions  
+  - sha: c60d8f128cac2be5f5c52ba33566aece35d41305
+    changeNotes: Sending remarketing hits via rc.sentRemarketingHit method - minor fix
+  
   - sha: 88f7ff9e464b083ab63b952bcc0c6476b717c1d5
     changeNotes: Sending remarketing hits via rc.sentRemarketingHit method
 
