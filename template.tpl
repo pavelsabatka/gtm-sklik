@@ -341,7 +341,7 @@ if (data.codetype === 'retargeting') {
   
   
 
-  const sendRemarketingHit = function(consent) {
+  const sendRemarketingHit = function(consent, completeTag) {
     log('SKLIK RETARGETING: preparing request', data);
     let params = {
       'rtgId': data.id,
@@ -378,40 +378,40 @@ if (data.codetype === 'retargeting') {
 
     
     
-    const sendHit = (params) => {
-      if (copyFromWindow('rc.retargetingHit')) {
-        callInWindow('rc.retargetingHit', params);
-        log('SKLIK RETARGETING: status success', params);
-        data.gtmOnSuccess();
-      } else {
-        const url = 'https://c.imedia.cz/js/retargeting.js';
-        if (queryPermission('inject_script', url)) {
-          injectScript(url, () => {
-            callInWindow('rc.retargetingHit', params);
-            log('SKLIK RETARGETING: loading script success', params);
-            data.gtmOnSuccess();
-          }, () => {
-            log('SKLIK RETARGETING: loading script failure', params);
-            data.gtmOnFailure();
-          });
-
-        } else {
-          log('SKLIK RETARGETING: status failure: request not allowed', params);
-          data.gtmOnFailure();
-        }
+    if (copyFromWindow('rc.retargetingHit')) {
+      callInWindow('rc.retargetingHit', params);
+      log('SKLIK RETARGETING: status success', params);
+      return data.gtmOnSuccess();
+    } else {
+      const url = 'https://c.imedia.cz/js/retargeting.js';
+      if (queryPermission('inject_script', url)) {
+        injectScript(url, () => {
+          callInWindow('rc.retargetingHit', params);
+          log('SKLIK RETARGETING: loading script success', params);
+          return data.gtmOnSuccess();
+        }, () => {
+          log('SKLIK RETARGETING: loading script failure', params);
+          return data.gtmOnFailure();
+        });
+       } else {
+        log('SKLIK RETARGETING: status failure: request not allowed', params);
+        return data.gtmOnFailure();
       }
-    };
-
-    sendHit(params);
+    }
+    
+    if (completeTag) {
+      log('SKLIK RETARGETING: callback inited');
+      data.gtmOnSuccess();      
+    }
   };
 
   
   let consent = isConsentGranted('ad_storage');
   if (consent || !data.consentWaitForUpdate) {
-    sendRemarketingHit(consent);
+    sendRemarketingHit(consent, false);
   } else {
     addConsentListener('ad_storage', (consentType, granted) => {
-      sendRemarketingHit(granted);
+      sendRemarketingHit(granted, true);
     });
   }
 
@@ -435,38 +435,42 @@ if (data.codetype === 'retargeting') {
   setInWindow('rc.consent', makeInteger(consent), true);
   
   
-  const trackConversion = function(consent) {
+  const trackConversion = function(consent, completeTag) {
     const url = 'https://www.seznam.cz/rs/static/rc.js';
     if (queryPermission('inject_script', url)) {
       injectScript(url, () => {
-        data.gtmOnSuccess();
         log('SKLIK CONVERSION: status success', data, ', consent:', consent);
+        return data.gtmOnSuccess();
       }, () => {
-        data.gtmOnFailure();
         log('SKLIK CONVERSION: status failure', data, ', consent:', consent);
+        return data.gtmOnFailure();
       });
     } else {
-      data.gtmOnFailure();
       log('SKLIK CONVERSION: status failure: request not allowed', data, ', consent:', consent);
+      return data.gtmOnFailure();
+    }
+
+
+    if (completeTag) {
+      log('SKLIK CONVERSION: callback inited');
+      data.gtmOnSuccess();
     }
   };
   
 
   if (consent || !data.consentWaitForUpdate) {
-    trackConversion(consent);
+    trackConversion(consent, false);
   } else {
     addConsentListener('analytics_storage', (consentType, granted) => {
       setInWindow('rc.consent', makeInteger(granted), true);
-      trackConversion(granted);
+      trackConversion(granted, true);
     });
   }
   
 
-  
-
 } else {
   log('Unknown codetype ' + data.codetype);
-
+  data.gtmOnFailure();
 }
 
 
