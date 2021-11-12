@@ -26,7 +26,3 @@ Template supports conversion and remarketing code.
 * `Category` - [category name](https://napoveda.sklik.cz/cileni/retargeting/pokrocile-nastaveni-rtg-kodu-u-kategorie-category/), only for category pages
 * `Item ID` - [product ID](https://napoveda.sklik.cz/cileni/retargeting/pokrocile-nastaveni-retargetingoveho-kodu/), only for Offer detail pages
 * `URL` (Optional) - URL with virtual query params can be submitted here. Hostname and pathname must be same as real url. Parametr [documentation](https://napoveda.sklik.cz/cileni/retargeting/pokrocile-nastaveni-rtg-kodu-volitelny-query-string/), example for [Sklik remarketing based on time on page](https://napoveda.sklik.cz/cileni/retargeting/pokrocile-nastaveni-rtg-kodu-dle-doby-stravene-na-webu/)
-
-
-### Consent Mode
-* `Wait for updates` - if your CMP does not use "wait_for_updates" value, this should be unchecked, otherwise some "pings" may not be sent.
