@@ -302,22 +302,6 @@ ___TEMPLATE_PARAMETERS___
         "help": "Custom params can be put into URL here. Hostname and pathname of Custom URL must be same as real URL! Otherwise Sklik will not accept this parameter.\nYou can use it e.g. for scroll tracking or targeting to JS executed actions on page."
       }
     ]
-  },
-  {
-    "type": "GROUP",
-    "name": "consentMode",
-    "displayName": "Consent Mode",
-    "groupStyle": "ZIPPY_CLOSED",
-    "subParams": [
-      {
-        "type": "CHECKBOX",
-        "name": "consentWaitForUpdate",
-        "checkboxText": "Wait for updates",
-        "simpleValueType": true,
-        "defaultValue": true,
-        "help": "Used only in consent mode. If true, request will be sent in \"consent update\" listener (if consent was not given before). If \"wait_for_update\" value is not used, this flag should be unchecked."
-      }
-    ]
   }
 ]
 
@@ -341,7 +325,7 @@ if (data.codetype === 'retargeting') {
   
   
 
-  const sendRemarketingHit = function(consent, completeTag) {
+  const sendRemarketingHit = function(consent) {
     log('SKLIK RETARGETING: preparing request', data);
     let params = {
       'rtgId': data.id,
@@ -398,24 +382,20 @@ if (data.codetype === 'retargeting') {
         return data.gtmOnFailure();
       }
     }
-    
-    if (completeTag) {
-      log('SKLIK RETARGETING: callback inited');
-      data.gtmOnSuccess();      
-    }
   };
 
   
   let consent = isConsentGranted('ad_storage');
-  if (consent || !data.consentWaitForUpdate) {
-    sendRemarketingHit(consent, false);
-  } else {
+  if (!consent) {
     addConsentListener('ad_storage', (consentType, granted) => {
-      sendRemarketingHit(granted, true);
+      log('SKLIK RETARGETING: callback called, consent:', granted);
+      if (consentType === 'ad_storage' && granted) {
+        sendRemarketingHit(granted);
+      }
     });
+    log('SKLIK RETARGETING: callback inited');
   }
-
-
+  sendRemarketingHit(consent);
 
   
 
@@ -435,7 +415,7 @@ if (data.codetype === 'retargeting') {
   setInWindow('rc.consent', makeInteger(consent), true);
   
   
-  const trackConversion = function(consent, completeTag) {
+  const trackConversion = function(consent) {
     const url = 'https://www.seznam.cz/rs/static/rc.js';
     if (queryPermission('inject_script', url)) {
       injectScript(url, () => {
@@ -446,26 +426,23 @@ if (data.codetype === 'retargeting') {
         return data.gtmOnFailure();
       });
     } else {
-      log('SKLIK CONVERSION: status failure: request not allowed', data, ', consent:', consent);
+      log('SKLIK CONVERSION: status failure: request not allowed:', data, ', consent:', consent);
       return data.gtmOnFailure();
-    }
-
-
-    if (completeTag) {
-      log('SKLIK CONVERSION: callback inited');
-      data.gtmOnSuccess();
     }
   };
   
 
-  if (consent || !data.consentWaitForUpdate) {
-    trackConversion(consent, false);
-  } else {
+  if (!consent) {
     addConsentListener('analytics_storage', (consentType, granted) => {
-      setInWindow('rc.consent', makeInteger(granted), true);
-      trackConversion(granted, true);
+      log('SKLIK CONVERSION: callback called, consent:', granted);
+      if (consentType === 'analytics_storage' && granted) {
+        setInWindow('rc.consent', makeInteger(granted), true);
+        trackConversion(granted);
+      }
     });
+    log('SKLIK CONVERSION: callback inited, consent:', consent);
   }
+  trackConversion(consent);
   
 
 } else {
