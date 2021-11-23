@@ -312,7 +312,7 @@ ___TEMPLATE_PARAMETERS___
       {
         "type": "SELECT",
         "name": "consent_handling",
-        "displayName": "Using consent mode",
+        "displayName": "How consent status is loaded",
         "macrosInSelect": false,
         "selectItems": [
           {
@@ -325,12 +325,13 @@ ___TEMPLATE_PARAMETERS___
           },
           {
             "value": "no_consent",
-            "displayValue": "No consent - run code always"
+            "displayValue": "Consent is not required"
           }
         ],
         "simpleValueType": true,
         "defaultValue": "consent_mode",
-        "alwaysInSummary": false
+        "alwaysInSummary": false,
+        "help": "See documentation for more information."
       },
       {
         "type": "GROUP",
@@ -385,7 +386,7 @@ ___TEMPLATE_PARAMETERS___
             "checkboxText": "Use Update Listener",
             "simpleValueType": true,
             "defaultValue": true,
-            "help": "If true, update listener is added to consent mode"
+            "help": "If enabled, the request is automatically sent after consent is granted. Otherwise, you need to run the tags again to send the data."
           }
         ],
         "enablingConditions": [
