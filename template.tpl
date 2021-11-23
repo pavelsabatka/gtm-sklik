@@ -382,10 +382,10 @@ ___TEMPLATE_PARAMETERS___
         "subParams": [
           {
             "type": "CHECKBOX",
-            "name": "useUpdateListener",
-            "checkboxText": "Use Update Listener",
+            "name": "disableUpdateListener",
+            "checkboxText": "Disable Consent Update Listener",
             "simpleValueType": true,
-            "defaultValue": true,
+            "defaultValue": false,
             "help": "If enabled, the request is automatically sent after consent is granted. Otherwise, you need to run the tags again to send the data."
           }
         ],
@@ -406,7 +406,6 @@ ___SANDBOXED_JS_FOR_WEB_TEMPLATE___
 
 const log = require('logToConsole');
 const setInWindow = require('setInWindow');
-const copyFromWindow = require('copyFromWindow');
 const callInWindow = require('callInWindow');
 const injectScript = require('injectScript');
 const queryPermission = require('queryPermission');
@@ -414,12 +413,41 @@ const Math = require('Math');
 const makeInteger = require('makeInteger');
 const isConsentGranted = require('isConsentGranted');
 const addConsentListener = require('addConsentListener');
+const templateStorage = require('templateStorage');
+
+
+
+
+const sendRequest = function(params) {
+  const method = 'rc.'+data.codetype+'Hit';
+  const name = data.codetype.toUpperCase();
+  if (templateStorage.getItem('isScriptLoaded')) {
+    callInWindow(method, params);
+    log('SKLIK '+name+': status success', method, params);
+    return data.gtmOnSuccess();
+  } else {
+    const url = 'https://c.seznam.cz/js/rc.js';
+    if (queryPermission('inject_script', url)) {
+      injectScript(url, () => {
+        templateStorage.setItem('isScriptLoaded', true);
+        callInWindow(method, params);
+        log('SKLIK '+name+': loading script success', method, params);
+        return data.gtmOnSuccess();
+      }, () => {
+        log('SKLIK '+name+': loading script failure', params);
+        return data.gtmOnFailure();
+      });
+     } else {
+      log('SKLIK '+name+': status failure: request not allowed', params);
+      return data.gtmOnFailure();
+    }
+  }
+};
+
 
 
 
 if (data.codetype === 'retargeting') {
-  
-  
 
   const sendRemarketingHit = function(consent) {
     log('SKLIK RETARGETING: preparing request', data);
@@ -456,28 +484,7 @@ if (data.codetype === 'retargeting') {
       if (data.category) params.category = (data.category || '').split('/').join(' | ');
     }
 
-    
-
-    if (copyFromWindow('rc.retargetingHit')) {
-      callInWindow('rc.retargetingHit', params);
-      log('SKLIK RETARGETING: status success', params);
-      return data.gtmOnSuccess();
-    } else {
-      const url = 'https://c.imedia.cz/js/retargeting.js';
-      if (queryPermission('inject_script', url)) {
-        injectScript(url, () => {
-          callInWindow('rc.retargetingHit', params);
-          log('SKLIK RETARGETING: loading script success', params);
-          return data.gtmOnSuccess();
-        }, () => {
-          log('SKLIK RETARGETING: loading script failure', params);
-          return data.gtmOnFailure();
-        });
-       } else {
-        log('SKLIK RETARGETING: status failure: request not allowed', params);
-        return data.gtmOnFailure();
-      }
-    }
+    sendRequest(params);
   };
 
   
@@ -490,7 +497,7 @@ if (data.codetype === 'retargeting') {
     consent = true;
   }
 
-  if (!consent && data.useUpdateListener) {
+  if (!consent && !data.disableUpdateListener) {
     addConsentListener('ad_storage', (consentType, granted) => {
       log('SKLIK RETARGETING: callback called, consent:', granted);
       if (consentType === 'ad_storage' && granted) {
@@ -502,18 +509,27 @@ if (data.codetype === 'retargeting') {
     sendRemarketingHit(consent);
   }
 
+  
 
 } else if (data.codetype === 'conversion') {
 
-  let revenue = (data.model === 'mh' ? data.order.revenue : data.revenue) || null;
-  revenue = (revenue ? (Math.round(revenue*100) / 100) : '');
-
   
-  setInWindow('seznam_cId', data.id);
-  setInWindow('seznam_value', revenue);
-  if (data.orderId) setInWindow('seznam_orderId', data.orderId);
-  if (data.zboziId) setInWindow('seznam_zboziId', data.zboziId);
-  if (data.zboziType) setInWindow('seznam_zboziType', data.zboziType);
+  const trackConversion = function(consent) {
+    log('SKLIK CONVERSION: preparing request', data);
+    let revenue = (data.model === 'mh' ? data.order.revenue : data.revenue) || null;
+    revenue = (revenue ? (Math.round(revenue*100) / 100) : '');
+    
+    let params = {
+      'id': data.id,
+      'consent': makeInteger(consent)
+    };
+    if (revenue) params.value = revenue;
+    if (data.orderId) params.orderId = data.orderId;
+    if (data.zboziType) params.zboziType = data.zboziType;
+    if (data.zboziId) params.zboziId = data.zboziId;
+    
+    sendRequest(params);
+  };
   
   let consent = false;
   if (data.consent_handling === 'consent_mode') {
@@ -524,28 +540,8 @@ if (data.codetype === 'retargeting') {
     consent = true;
   }
 
-  setInWindow('rc', {}, false);
-  setInWindow('rc.consent', makeInteger(consent), true);
-  
-  
-  const trackConversion = function(consent) {
-    const url = 'https://www.seznam.cz/rs/static/rc.js';
-    if (queryPermission('inject_script', url)) {
-      injectScript(url, () => {
-        log('SKLIK CONVERSION: status success', data, ', consent:', consent);
-        return data.gtmOnSuccess();
-      }, () => {
-        log('SKLIK CONVERSION: status failure', data, ', consent:', consent);
-        return data.gtmOnFailure();
-      });
-    } else {
-      log('SKLIK CONVERSION: status failure: request not allowed:', data, ', consent:', consent);
-      return data.gtmOnFailure();
-    }
-  };
-  
 
-  if (!consent && data.useUpdateListener) {
+  if (!consent && !data.disableUpdateListener) {
     addConsentListener('analytics_storage', (consentType, granted) => {
       log('SKLIK CONVERSION: callback called, consent:', granted);
       if (consentType === 'analytics_storage' && granted) {
@@ -558,6 +554,7 @@ if (data.codetype === 'retargeting') {
   trackConversion(consent);
   
 
+  
 } else {
   log('Unknown codetype ' + data.codetype);
   data.gtmOnFailure();
@@ -600,201 +597,6 @@ ___WEB_PERMISSIONS___
           "value": {
             "type": 2,
             "listItem": [
-              {
-                "type": 3,
-                "mapKey": [
-                  {
-                    "type": 1,
-                    "string": "key"
-                  },
-                  {
-                    "type": 1,
-                    "string": "read"
-                  },
-                  {
-                    "type": 1,
-                    "string": "write"
-                  },
-                  {
-                    "type": 1,
-                    "string": "execute"
-                  }
-                ],
-                "mapValue": [
-                  {
-                    "type": 1,
-                    "string": "seznam_cId"
-                  },
-                  {
-                    "type": 8,
-                    "boolean": true
-                  },
-                  {
-                    "type": 8,
-                    "boolean": true
-                  },
-                  {
-                    "type": 8,
-                    "boolean": false
-                  }
-                ]
-              },
-              {
-                "type": 3,
-                "mapKey": [
-                  {
-                    "type": 1,
-                    "string": "key"
-                  },
-                  {
-                    "type": 1,
-                    "string": "read"
-                  },
-                  {
-                    "type": 1,
-                    "string": "write"
-                  },
-                  {
-                    "type": 1,
-                    "string": "execute"
-                  }
-                ],
-                "mapValue": [
-                  {
-                    "type": 1,
-                    "string": "seznam_value"
-                  },
-                  {
-                    "type": 8,
-                    "boolean": true
-                  },
-                  {
-                    "type": 8,
-                    "boolean": true
-                  },
-                  {
-                    "type": 8,
-                    "boolean": false
-                  }
-                ]
-              },
-              {
-                "type": 3,
-                "mapKey": [
-                  {
-                    "type": 1,
-                    "string": "key"
-                  },
-                  {
-                    "type": 1,
-                    "string": "read"
-                  },
-                  {
-                    "type": 1,
-                    "string": "write"
-                  },
-                  {
-                    "type": 1,
-                    "string": "execute"
-                  }
-                ],
-                "mapValue": [
-                  {
-                    "type": 1,
-                    "string": "seznam_orderId"
-                  },
-                  {
-                    "type": 8,
-                    "boolean": true
-                  },
-                  {
-                    "type": 8,
-                    "boolean": true
-                  },
-                  {
-                    "type": 8,
-                    "boolean": false
-                  }
-                ]
-              },
-              {
-                "type": 3,
-                "mapKey": [
-                  {
-                    "type": 1,
-                    "string": "key"
-                  },
-                  {
-                    "type": 1,
-                    "string": "read"
-                  },
-                  {
-                    "type": 1,
-                    "string": "write"
-                  },
-                  {
-                    "type": 1,
-                    "string": "execute"
-                  }
-                ],
-                "mapValue": [
-                  {
-                    "type": 1,
-                    "string": "seznam_zboziId"
-                  },
-                  {
-                    "type": 8,
-                    "boolean": true
-                  },
-                  {
-                    "type": 8,
-                    "boolean": true
-                  },
-                  {
-                    "type": 8,
-                    "boolean": false
-                  }
-                ]
-              },
-              {
-                "type": 3,
-                "mapKey": [
-                  {
-                    "type": 1,
-                    "string": "key"
-                  },
-                  {
-                    "type": 1,
-                    "string": "read"
-                  },
-                  {
-                    "type": 1,
-                    "string": "write"
-                  },
-                  {
-                    "type": 1,
-                    "string": "execute"
-                  }
-                ],
-                "mapValue": [
-                  {
-                    "type": 1,
-                    "string": "seznam_zboziType"
-                  },
-                  {
-                    "type": 8,
-                    "boolean": true
-                  },
-                  {
-                    "type": 8,
-                    "boolean": true
-                  },
-                  {
-                    "type": 8,
-                    "boolean": false
-                  }
-                ]
-              },
               {
                 "type": 3,
                 "mapKey": [
@@ -896,11 +698,7 @@ ___WEB_PERMISSIONS___
                 "mapValue": [
                   {
                     "type": 1,
-                    "string": "rc.consent"
-                  },
-                  {
-                    "type": 8,
-                    "boolean": true
+                    "string": "rc.conversionHit"
                   },
                   {
                     "type": 8,
@@ -909,6 +707,10 @@ ___WEB_PERMISSIONS___
                   {
                     "type": 8,
                     "boolean": false
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
                   }
                 ]
               }
@@ -936,11 +738,7 @@ ___WEB_PERMISSIONS___
             "listItem": [
               {
                 "type": 1,
-                "string": "https://c.imedia.cz/"
-              },
-              {
-                "type": 1,
-                "string": "https://www.seznam.cz/"
+                "string": "https://c.seznam.cz/"
               }
             ]
           }
@@ -1035,6 +833,16 @@ ___WEB_PERMISSIONS___
       "isEditedByUser": true
     },
     "isRequired": true
+  },
+  {
+    "instance": {
+      "key": {
+        "publicId": "access_template_storage",
+        "versionId": "1"
+      },
+      "param": []
+    },
+    "isRequired": true
   }
 ]
 
@@ -1042,90 +850,135 @@ ___WEB_PERMISSIONS___
 ___TESTS___
 
 scenarios:
-- name: Conversion - request was sent
+- name: Template - script was injected
   code: |-
     runCode(retargetingData);
     assertApi('injectScript').wasCalled();
-- name: Conversion - params were submitted
+- name: Conversion - request was sent
   code: |-
-    runCode(conversionData);
-    assertApi('setInWindow').wasCalledWith('seznam_cId', 'ID123');
-    assertApi('setInWindow').wasCalledWith('seznam_value', 99.12);
-    assertApi('setInWindow').wasCalledWith('seznam_orderId', 'T_112233');
-- name: Conversion - zbozi_cz
-  code: |-
-    let zboziData = {
-      'codetype': 'conversion',
+    conversionData.zboziType = 'standard';
+    conversionData.zboziId = '54321';
+
+    const expected = {
       'id': 'ID123',
-      'revenue': 99.123,
+      'value': 99.10,
       'orderId': 'T_112233',
+      'zboziType': 'standard',
       'zboziId': '54321',
-      'zboziType': 'standard'
+      'consent': 1
     };
 
-    // Call runCode to run the template's code.
-    runCode(zboziData);
+    runCode(conversionData);
 
-    // Verify that the tag finished successfully.
-    assertApi('setInWindow').wasCalledWith('seznam_zboziId', '54321');
-    assertApi('setInWindow').wasCalledWith('seznam_zboziType', 'standard');
+    assertApi('callInWindow').wasCalledWith('rc.conversionHit', expected);
+- name: Conversion - zbozi_cz
+  code: |-
+    conversionData.zboziType = 'standard';
+    conversionData.zboziId = '54321';
+
+    const expected = {
+      'id': 'ID123',
+      'value': 99.10,
+      'orderId': 'T_112233',
+      'zboziType': 'standard',
+      'zboziId': '54321',
+      'consent': 1
+    };
+
+    runCode(conversionData);
+
+    assertApi('callInWindow').wasCalledWith('rc.conversionHit', expected);
 - name: Conversion - consent mode - approved
   code: |-
     mock('isConsentGranted', function(consentType) {
       return true;
     });
+
+    let expected = {
+      'id': 'ID123',
+      'value': 99.10,
+      'orderId': 'T_112233',
+      'consent': 1
+    };
+
     runCode(conversionData);
-    assertApi('setInWindow').wasCalledWith('rc.consent', 1, true);
+    assertApi('callInWindow').wasCalledWith('rc.conversionHit', expected);
 - name: Conversion - consent mode - rejected
   code: |-
     mock('isConsentGranted', function(consentType) {
       return false;
     });
+
+    let expected = {
+      'id': 'ID123',
+      'value': 99.10,
+      'orderId': 'T_112233',
+      'consent': 0
+    };
+
     runCode(conversionData);
-    assertApi('setInWindow').wasCalledWith('rc.consent', 0, true);
+    assertApi('callInWindow').wasCalledWith('rc.conversionHit', expected);
 - name: Conversion - consent from variable - approved
   code: |-
     conversionData.consent_handling = 'consent_variable';
     conversionData.consent_variable_conversion = true;
 
-    mock('isConsentGranted', function(consentType) {
-      return true;
-    });
-    runCode(conversionData);
+    let expected = {
+      'id': 'ID123',
+      'value': 99.10,
+      'orderId': 'T_112233',
+      'consent': 1
+    };
 
-    assertApi('setInWindow').wasCalledWith('rc.consent', 1, true);
+    runCode(conversionData);
+    assertApi('callInWindow').wasCalledWith('rc.conversionHit', expected);
 - name: Conversion - consent from variable - rejected
   code: |-
     conversionData.consent_handling = 'consent_variable';
     conversionData.consent_variable_conversion = false;
 
-    mock('isConsentGranted', function(consentType) {
-      return true;
-    });
-    runCode(conversionData);
+    let expected = {
+      'id': 'ID123',
+      'value': 99.10,
+      'orderId': 'T_112233',
+      'consent': 0
+    };
 
-    assertApi('setInWindow').wasCalledWith('rc.consent', 0, true);
+    runCode(conversionData);
+    assertApi('callInWindow').wasCalledWith('rc.conversionHit', expected);
 - name: Conversion - no consent mode
   code: |-
     conversionData.consent_handling = 'no_consent';
 
+    let expected = {
+      'id': 'ID123',
+      'value': 99.10,
+      'orderId': 'T_112233',
+      'consent': 1
+    };
+
     runCode(conversionData);
-
-
+    assertApi('callInWindow').wasCalledWith('rc.conversionHit', expected);
     assertApi('isConsentGranted').wasNotCalled();
-    assertApi('setInWindow').wasCalledWith('rc.consent', 1, true);
 - name: Conversion - listener was added
   code: |-
-    conversionData.useUpdateListener = true;
+    conversionData.disableUpdateListener = false;
+
     mock('isConsentGranted', function(consentType) {
       return false;
     });
     runCode(conversionData);
+
+    let expected = {
+      'id': 'ID123',
+      'value': 99.10,
+      'orderId': 'T_112233',
+      'consent': 0
+    };
+
+    runCode(conversionData);
+    assertApi('callInWindow').wasCalledWith('rc.conversionHit', expected);
     assertApi('addConsentListener').wasCalled();
-- name: Retargeting - request was sent
-  code: |-
-    runCode(retargetingData);
-    assertApi('injectScript').wasCalled();
 - name: Retargeting - basic retargeting
   code: |-
     mock('injectScript', function(url, onSuccess, onFailure) {
@@ -1257,9 +1110,10 @@ setup: |-
   let conversionData = {
     'codetype': 'conversion',
     'id': 'ID123',
-    'revenue': 99.123,
+    'revenue': 99.10,
     'orderId': 'T_112233',
-    'consent_handling': 'consent_mode'
+    'consent_handling': 'consent_mode',
+    'disableUpdateListener': false
   };
 
 
@@ -1267,7 +1121,8 @@ setup: |-
     'id': 'ID123',
     'codetype': 'retargeting',
     'multipleHitsPerPage': false,
-    'consent_handling': 'consent_mode'
+    'consent_handling': 'consent_mode',
+    'disableUpdateListener': false
   };
 
 
