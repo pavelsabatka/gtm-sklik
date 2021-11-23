@@ -302,6 +302,101 @@ ___TEMPLATE_PARAMETERS___
         "help": "Custom params can be put into URL here. Hostname and pathname of Custom URL must be same as real URL! Otherwise Sklik will not accept this parameter.\nYou can use it e.g. for scroll tracking or targeting to JS executed actions on page."
       }
     ]
+  },
+  {
+    "type": "GROUP",
+    "name": "consent",
+    "displayName": "Consent",
+    "groupStyle": "ZIPPY_OPEN_ON_PARAM",
+    "subParams": [
+      {
+        "type": "SELECT",
+        "name": "consent_handling",
+        "displayName": "Using consent mode",
+        "macrosInSelect": false,
+        "selectItems": [
+          {
+            "value": "consent_mode",
+            "displayValue": "Use GTM consent mode"
+          },
+          {
+            "value": "consent_variable",
+            "displayValue": "Load consent status from variable"
+          },
+          {
+            "value": "no_consent",
+            "displayValue": "No consent - run code always"
+          }
+        ],
+        "simpleValueType": true,
+        "defaultValue": "consent_mode",
+        "alwaysInSummary": false
+      },
+      {
+        "type": "GROUP",
+        "name": "consent_variable_group",
+        "displayName": "",
+        "groupStyle": "NO_ZIPPY",
+        "subParams": [
+          {
+            "type": "TEXT",
+            "name": "consent_variable_remarketing",
+            "displayName": "Consent Status For Remarketing",
+            "simpleValueType": true,
+            "enablingConditions": [
+              {
+                "paramName": "codetype",
+                "paramValue": "retargeting",
+                "type": "EQUALS"
+              }
+            ]
+          },
+          {
+            "type": "TEXT",
+            "name": "consent_variable_conversion",
+            "displayName": "Consent Status For Conversion Tracking",
+            "simpleValueType": true,
+            "enablingConditions": [
+              {
+                "paramName": "codetype",
+                "paramValue": "conversion",
+                "type": "EQUALS"
+              }
+            ]
+          }
+        ],
+        "enablingConditions": [
+          {
+            "paramName": "consent_handling",
+            "paramValue": "consent_variable",
+            "type": "EQUALS"
+          }
+        ]
+      },
+      {
+        "type": "GROUP",
+        "name": "consent_mode_group",
+        "displayName": "",
+        "groupStyle": "NO_ZIPPY",
+        "subParams": [
+          {
+            "type": "CHECKBOX",
+            "name": "useUpdateListener",
+            "checkboxText": "Use Update Listener",
+            "simpleValueType": true,
+            "defaultValue": true,
+            "help": "If true, update listener is added to consent mode"
+          }
+        ],
+        "enablingConditions": [
+          {
+            "paramName": "consent_handling",
+            "paramValue": "consent_mode",
+            "type": "EQUALS"
+          }
+        ]
+      }
+    ]
   }
 ]
 
@@ -361,7 +456,7 @@ if (data.codetype === 'retargeting') {
     }
 
     
-    
+
     if (copyFromWindow('rc.retargetingHit')) {
       callInWindow('rc.retargetingHit', params);
       log('SKLIK RETARGETING: status success', params);
@@ -385,8 +480,16 @@ if (data.codetype === 'retargeting') {
   };
 
   
-  let consent = isConsentGranted('ad_storage');
-  if (!consent) {
+  let consent = false;
+  if (data.consent_handling === 'consent_mode') {
+    consent = isConsentGranted('ad_storage');
+  } else if (data.consent_handling === 'consent_variable') {
+    consent = data.consent_variable_remarketing;
+  } else if (data.consent_handling === 'no_consent') {
+    consent = true;
+  }
+
+  if (!consent && data.useUpdateListener) {
     addConsentListener('ad_storage', (consentType, granted) => {
       log('SKLIK RETARGETING: callback called, consent:', granted);
       if (consentType === 'ad_storage' && granted) {
@@ -394,10 +497,10 @@ if (data.codetype === 'retargeting') {
       }
     });
     log('SKLIK RETARGETING: callback inited');
+  } else if (consent) {
+    sendRemarketingHit(consent);
   }
-  sendRemarketingHit(consent);
 
-  
 
 } else if (data.codetype === 'conversion') {
 
@@ -410,7 +513,16 @@ if (data.codetype === 'retargeting') {
   if (data.orderId) setInWindow('seznam_orderId', data.orderId);
   if (data.zboziId) setInWindow('seznam_zboziId', data.zboziId);
   if (data.zboziType) setInWindow('seznam_zboziType', data.zboziType);
-  let consent = isConsentGranted('analytics_storage');
+  
+  let consent = false;
+  if (data.consent_handling === 'consent_mode') {
+    consent = isConsentGranted('analytics_storage');
+  } else if (data.consent_handling === 'consent_variable') {
+    consent = data.consent_variable_conversion;
+  } else if (data.consent_handling === 'no_consent') {
+    consent = true;
+  }
+
   setInWindow('rc', {}, false);
   setInWindow('rc.consent', makeInteger(consent), true);
   
@@ -432,7 +544,7 @@ if (data.codetype === 'retargeting') {
   };
   
 
-  if (!consent) {
+  if (!consent && data.useUpdateListener) {
     addConsentListener('analytics_storage', (consentType, granted) => {
       log('SKLIK CONVERSION: callback called, consent:', granted);
       if (consentType === 'analytics_storage' && granted) {
@@ -956,13 +1068,59 @@ scenarios:
     // Verify that the tag finished successfully.
     assertApi('setInWindow').wasCalledWith('seznam_zboziId', '54321');
     assertApi('setInWindow').wasCalledWith('seznam_zboziType', 'standard');
-- name: Conversion - consent was given
+- name: Conversion - consent mode - approved
   code: |-
-    runCode(conversionData);
     mock('isConsentGranted', function(consentType) {
       return true;
     });
+    runCode(conversionData);
     assertApi('setInWindow').wasCalledWith('rc.consent', 1, true);
+- name: Conversion - consent mode - rejected
+  code: |-
+    mock('isConsentGranted', function(consentType) {
+      return false;
+    });
+    runCode(conversionData);
+    assertApi('setInWindow').wasCalledWith('rc.consent', 0, true);
+- name: Conversion - consent from variable - approved
+  code: |-
+    conversionData.consent_handling = 'consent_variable';
+    conversionData.consent_variable_conversion = true;
+
+    mock('isConsentGranted', function(consentType) {
+      return true;
+    });
+    runCode(conversionData);
+
+    assertApi('setInWindow').wasCalledWith('rc.consent', 1, true);
+- name: Conversion - consent from variable - rejected
+  code: |-
+    conversionData.consent_handling = 'consent_variable';
+    conversionData.consent_variable_conversion = false;
+
+    mock('isConsentGranted', function(consentType) {
+      return true;
+    });
+    runCode(conversionData);
+
+    assertApi('setInWindow').wasCalledWith('rc.consent', 0, true);
+- name: Conversion - no consent mode
+  code: |-
+    conversionData.consent_handling = 'no_consent';
+
+    runCode(conversionData);
+
+
+    assertApi('isConsentGranted').wasNotCalled();
+    assertApi('setInWindow').wasCalledWith('rc.consent', 1, true);
+- name: Conversion - listener was added
+  code: |-
+    conversionData.useUpdateListener = true;
+    mock('isConsentGranted', function(consentType) {
+      return false;
+    });
+    runCode(conversionData);
+    assertApi('addConsentListener').wasCalled();
 - name: Retargeting - request was sent
   code: |-
     runCode(retargetingData);
@@ -1038,13 +1196,6 @@ scenarios:
   code: |-
     retargetingData.url = 'https://example.com/foo?bar=1';
 
-    mock('injectScript', function(url, onSuccess, onFailure) {
-      onSuccess();
-    });
-    mock('copyFromWindow', (name) => {
-      if (name === 'rc.retargetingHit') return function() {};
-    });
-
     let expected = {
       'rtgId': 'ID123',
       'consent': 1,
@@ -1054,20 +1205,74 @@ scenarios:
     runCode(retargetingData);
 
     assertApi('callInWindow').wasCalledWith('rc.retargetingHit', expected);
+- name: Retargeting - added update listener
+  code: |-
+    retargetingData.useUpdateListener = true;
+
+    mock('isConsentGranted', function(consentType) {
+      return false;
+    });
+
+    runCode(retargetingData);
+
+    assertApi('addConsentListener').wasCalled();
+    assertApi('callInWindow').wasNotCalled();
+- name: Retargeting - no consent mode
+  code: |-
+    retargetingData.consent_handling = 'no_consent';
+
+    let expected = {
+      'rtgId': 'ID123',
+      'consent': 1
+    };
+
+    runCode(retargetingData);
+
+    assertApi('isConsentGranted').wasNotCalled();
+    assertApi('callInWindow').wasCalledWith('rc.retargetingHit', expected);
+- name: Retargeting - consent from variable - approved
+  code: |-
+    retargetingData.consent_handling = 'consent_variable';
+    retargetingData.consent_variable_remarketing = 1;
+
+    runCode(retargetingData);
+
+    let expected = {
+      'rtgId': 'ID123',
+      'consent': 1
+    };
+
+    assertApi('callInWindow').wasCalledWith('rc.retargetingHit', expected);
+- name: Retargeting - consent from variable - rejected
+  code: |-
+    retargetingData.consent_handling = 'consent_variable';
+    retargetingData.consent_variable_remarketing = 0;
+
+    runCode(retargetingData);
+
+    assertApi('isConsentGranted').wasNotCalled();
+    assertApi('callInWindow').wasNotCalled();
 setup: |-
   let conversionData = {
     'codetype': 'conversion',
     'id': 'ID123',
     'revenue': 99.123,
-    'orderId': 'T_112233'
+    'orderId': 'T_112233',
+    'consent_handling': 'consent_mode'
   };
 
 
   let retargetingData = {
     'id': 'ID123',
     'codetype': 'retargeting',
-    'multipleHitsPerPage': false
+    'multipleHitsPerPage': false,
+    'consent_handling': 'consent_mode'
   };
+
+
+  mock('injectScript', function(url, onSuccess, onFailure) {
+    onSuccess();
+  });
 
 
 ___NOTES___
