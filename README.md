@@ -36,3 +36,4 @@ The Sklik template supports different handling with consent. In collapsable menu
 ![alt text](https://github.com/pavelsabatka/gtm-sklik/blob/master/img/consent-variable.png?raw=true)
 * `No consent required` - tag will be fired always, it will behave as if consent had been given
 ![alt text](https://github.com/pavelsabatka/gtm-sklik/blob/master/img/consent-none.png?raw=true)
+
