@@ -2,10 +2,13 @@ homepage: "https://www.houseofrezac.com"
 documentation: "https://github.com/pavelsabatka/gtm-sklik"
 versions:
   # Latest version
-  - sha: a401e894308ec526176367bfe4500830f9e47893
-    changeNotes: Sklik template update for consent mode
+  - sha: cf683ff46b061a6127d423a52046d936053fa08d
+    changeNotes: Sklik template update for consent mode - v2
 
   # Older versions
+  - sha: a401e894308ec526176367bfe4500830f9e47893
+    changeNotes: Sklik template update for consent mode - v1
+  
   - sha: b260bbeca4d72af11c1a300398f8cfdc5cf8ecea
     changeNotes: Minor fix - mark task success also when consent callback was inited
   
