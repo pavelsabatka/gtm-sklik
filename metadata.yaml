@@ -2,7 +2,7 @@ homepage: "https://www.houseofrezac.com"
 documentation: "https://github.com/pavelsabatka/gtm-sklik"
 versions:
   # Latest version
-  - sha: cf683ff46b061a6127d423a52046d936053fa08d
+  - sha: 093134b87b455c514bc4854b7a1ac2770f93486f
     changeNotes: Sklik template update for consent mode - v2
 
   # Older versions
