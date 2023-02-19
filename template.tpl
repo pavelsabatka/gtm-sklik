@@ -15,7 +15,7 @@ ___INFO___
     "ANALYTICS",
     "ADVERTISING"
   ],
-  "description": "Conversion \u0026 remarketing code for Sklik \u0026 Zbozi. Supporting RC.js code form May 2020.\n@author House of Rezac\n@version 2021-08-12",
+  "description": "Conversion \u0026 remarketing code for Sklik \u0026 Zbozi. Supporting RC.js code form May 2020.\n@author House of Rezac\n@version 2023-02-19",
   "securityGroups": [],
   "id": "cvt_temp_public_id",
   "type": "TAG",
@@ -486,7 +486,7 @@ if (data.codetype === 'retargeting') {
 
   
   let consent = -1;
-  if (data.consent_handling === 'consent_mode') {
+  if (data.consent_handling === 'consent_mode' || data.consent_handling === undefined) {
     consent = makeInteger(isConsentGranted('ad_storage'));
   } else if (data.consent_handling === 'consent_variable') {
     consent = makeInteger(data.consent_variable_remarketing);
@@ -500,8 +500,12 @@ if (data.codetype === 'retargeting') {
       }
     });
     log('SKLIK RETARGETING: callback inited');
+    data.gtmOnSuccess();
   } else if (consent) {
     sendRemarketingHit(consent);
+  } else {
+    log('SKLIK RETARGETING: sending no hit due to missing consent');
+    data.gtmOnSuccess();
   }
 
   
@@ -528,7 +532,7 @@ if (data.codetype === 'retargeting') {
   };
   
   let consent = -1;
-  if (data.consent_handling === 'consent_mode') {
+  if (data.consent_handling === 'consent_mode' || data.consent_handling === undefined) {
     consent = makeInteger(isConsentGranted('analytics_storage'));
   } else if (data.consent_handling === 'consent_variable') {
     consent = makeInteger(data.consent_variable_conversion);
@@ -543,6 +547,7 @@ if (data.codetype === 'retargeting') {
       }
     });
     log('SKLIK CONVERSION: callback inited, consent:', consent);
+    data.gtmOnSuccess();
   }
   trackConversion(consent);
   
@@ -883,6 +888,22 @@ scenarios:
 - name: Conversion - consent mode - approved
   code: |-
     conversionData.consent_handling = 'consent_mode';
+    mock('isConsentGranted', function(consentType) {
+      return true;
+    });
+
+    let expected = {
+      'id': 'ID123',
+      'value': 99.10,
+      'orderId': 'T_112233',
+      'consent': 1
+    };
+
+    runCode(conversionData);
+    assertApi('callInWindow').wasCalledWith('rc.conversionHit', expected);
+- name: Conversion - consent mode - undefined
+  code: |-
+    conversionData.consent_handling = undefined;
     mock('isConsentGranted', function(consentType) {
       return true;
     });
