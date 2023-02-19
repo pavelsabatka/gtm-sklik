@@ -2,10 +2,13 @@ homepage: "https://www.houseofrezac.com"
 documentation: "https://github.com/pavelsabatka/gtm-sklik"
 versions:
   # Latest version
+  - sha: 230d955e95d9d3037e603a5f76045038cbb19e0f
+    changeNotes: Added backward compatiblity to consent mode
+  
+  # Older versions    
   - sha: eab86e531c8834ba61ddd7e098c2145757598506
     changeNotes: Sklik template update for consent mode - v3
-  
-  # Older versions
+
   - sha: 093134b87b455c514bc4854b7a1ac2770f93486f
     changeNotes: Sklik template update for consent mode - v2
   
