@@ -27,6 +27,7 @@ Template supports conversion and remarketing code.
 * `Item ID` - [product ID](https://napoveda.sklik.cz/cileni/retargeting/pokrocile-nastaveni-retargetingoveho-kodu/), only for Offer detail pages
 * `Email Hash (recommended) or Email` - Email hash or Email.
 If you enter a non-hashed email, it will be encoded automatically and only the encoded value will be passed to the remarketing code. We recommend passing the email hash directly using the sha256 function, some browsers may not support the hashing function.
+Function `sha256` must be used.
 * `Custom URL` (Optional) - an URL with virtual query parameters can be submitted here. Hostname and pathname must be same as real url. Parameter [documentation](https://napoveda.sklik.cz/cileni/retargeting/pokrocile-nastaveni-rtg-kodu-volitelny-query-string/), example for [Sklik remarketing based on time on page](https://napoveda.sklik.cz/cileni/retargeting/pokrocile-nastaveni-rtg-kodu-dle-doby-stravene-na-webu/)
 
 
