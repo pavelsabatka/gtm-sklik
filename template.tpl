@@ -15,7 +15,7 @@ ___INFO___
     "ANALYTICS",
     "ADVERTISING"
   ],
-  "description": "Conversion \u0026 remarketing code for Sklik \u0026 Zbozi. Supporting RC.js code form May 2020.\n@author House of Rezac\n@version 2023-02-19",
+  "description": "Conversion \u0026 remarketing code for Sklik \u0026 Zbozi.\n\n@author Pavel Sabatka\n@version 2023-08-09",
   "securityGroups": [],
   "id": "cvt_temp_public_id",
   "type": "TAG",
@@ -225,6 +225,23 @@ ___TEMPLATE_PARAMETERS___
         "type": "SELECT"
       },
       {
+        "type": "SELECT",
+        "name": "user",
+        "displayName": "{{aac.user}}",
+        "macrosInSelect": true,
+        "selectItems": [],
+        "simpleValueType": true,
+        "enablingConditions": [
+          {
+            "paramName": "model",
+            "paramValue": "mh",
+            "type": "EQUALS"
+          }
+        ],
+        "alwaysInSummary": true,
+        "help": ""
+      },
+      {
         "help": "Category will use {{aac.page}}[KEY] value. If not set, standard category value will be used.",
         "enablingConditions": [
           {
@@ -292,6 +309,21 @@ ___TEMPLATE_PARAMETERS___
         "name": "category",
         "type": "TEXT",
         "canBeEmptyString": false
+      },
+      {
+        "type": "TEXT",
+        "name": "userEmail",
+        "displayName": "Email Hash (recommended) or Email",
+        "simpleValueType": true,
+        "alwaysInSummary": true,
+        "help": "Email hash or Email.\nIf you enter a non-hashed email, it will be encoded automatically and only the encoded value will be passed to the remarketing code. We recommend passing the email hash directly using the sha256 function, some browsers may not support the hashing function.",
+        "enablingConditions": [
+          {
+            "paramName": "model",
+            "paramValue": "vars",
+            "type": "EQUALS"
+          }
+        ]
       },
       {
         "displayName": "Custom URL",
@@ -415,8 +447,6 @@ const addConsentListener = require('addConsentListener');
 const templateStorage = require('templateStorage');
 
 
-
-
 const sendRequest = function(params) {
   const method = 'rc.'+data.codetype+'Hit';
   const name = data.codetype.toUpperCase();
@@ -440,6 +470,35 @@ const sendRequest = function(params) {
       log('SKLIK '+name+': status failure: request not allowed', params);
       return data.gtmOnFailure();
     }
+  }
+};
+
+
+const prepareEid = function(params, callback) {
+  if (params.eid && (params.eid.length != 64 || params.eid.indexOf('@') > -1)) {
+    let digest = callInWindow('_gtm_mh.sha256', params.eid); // try to call MH hash
+    if (digest) {
+      params.eid = digest;
+      return callback(params);
+    }
+
+    log('SKLIK RETARGETING: evaluating hash for EID from string', params.eid);
+    const sha256 = require('sha256');
+    if (!sha256) {
+      params.eid = undefined;
+      return callback(params);
+    }
+    
+    sha256(params.eid, (digest) => { // success
+      params.eid = digest;
+      callback(params);
+    }, (value) => { // failure
+      log('SKLIK RETARGETING: EID evaluation failed -> removing value', value);
+      params.eid = undefined;
+      callback(params);
+    }, {outputEncoding: 'hex'});
+  } else {
+    callback(params);
   }
 };
 
@@ -469,22 +528,29 @@ if (data.codetype === 'retargeting') {
       if (data.products && data.products.length) {
         params.itemId = data.products[0].id || '';
       }
-      if (data.categorySeznamKey) {
-        params.category = data.page[data.categorySeznamKey] || '';
-      } else {
-        params.category = ((data.page && data.page.category) ? data.page.category.replaceAll('/', ' | ') : '') || '';
+      if (data.category) {
+        if (data.categorySeznamKey) {
+          params.category = data.page[data.categorySeznamKey] || '';
+        } else {
+          params.category = ((data.page && data.page.category) ? data.page.category.replaceAll('/', ' | ') : '') || '';
+        }
+      }
+      if (data.user && data.user.email) {
+        params.eid = data.user.email;
       }
 
     } else {
       if (data.pagetype) params.pageType = data.pagetype || '';
       if (data.itemId) params.itemId = data.itemId || '';
       if (data.category) params.category = (data.category || '').split('/').join(' | ');
+      if (data.userEmail) params.eid = data.userEmail;
     }
 
-    sendRequest(params);
+    prepareEid(params, sendRequest);
   };
 
   
+
   let consent = -1;
   if (data.consent_handling === 'consent_mode' || data.consent_handling === undefined) {
     consent = makeInteger(isConsentGranted('ad_storage'));
@@ -701,6 +767,45 @@ ___WEB_PERMISSIONS___
                   {
                     "type": 8,
                     "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": false
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  }
+                ]
+              },
+              {
+                "type": 3,
+                "mapKey": [
+                  {
+                    "type": 1,
+                    "string": "key"
+                  },
+                  {
+                    "type": 1,
+                    "string": "read"
+                  },
+                  {
+                    "type": 1,
+                    "string": "write"
+                  },
+                  {
+                    "type": 1,
+                    "string": "execute"
+                  }
+                ],
+                "mapValue": [
+                  {
+                    "type": 1,
+                    "string": "_gtm_mh.sha256"
+                  },
+                  {
+                    "type": 8,
+                    "boolean": false
                   },
                   {
                     "type": 8,
@@ -1103,6 +1208,52 @@ scenarios:
     assertApi('isConsentGranted').wasNotCalled();
     assertApi('callInWindow').wasNotCalled();
     assertApi('addConsentListener').wasNotCalled();
+- name: Retargeting - email from MH
+  code: |-
+    let expected = {
+      'rtgId': 'ID123',
+      'pageType': 'offerdetail',
+      'itemId': 'ITEM_123/4',
+      'eid': '836f82db99121b3481011f16b49dfa5fbc714a0d1b1b9f784a1ebbbf5b39577f'
+    };
+
+    runCode(retargetingDataMH);
+
+    assertApi('callInWindow').wasCalledWith('rc.retargetingHit', expected);
+- name: Retargeting - email from vars
+  code: |-
+    retargetingData.model = 'vars';
+    retargetingData.pagetype = 'category';
+    retargetingData.category = 'Jidlo/Pecivo/Bile pecivo/Rohliky';
+    retargetingData.userEmail = 'john.doe@example.com';
+
+    let expected = {
+      'rtgId': 'ID123',
+      'pageType': 'category',
+      'category': 'Jidlo | Pecivo | Bile pecivo | Rohliky',
+      'eid': '836f82db99121b3481011f16b49dfa5fbc714a0d1b1b9f784a1ebbbf5b39577f'
+    };
+
+    runCode(retargetingData);
+
+    assertApi('callInWindow').wasCalledWith('rc.retargetingHit', expected);
+- name: Retargeting - email hash from vars
+  code: |-
+    retargetingData.model = 'vars';
+    retargetingData.pagetype = 'category';
+    retargetingData.category = 'Jidlo/Pecivo/Bile pecivo/Rohliky';
+    retargetingData.userEmail = '836f82db99121b3481011f16b49dfa5fbc714a0d1b1b9f784a1ebbbf5b39577f';
+
+    let expected = {
+      'rtgId': 'ID123',
+      'pageType': 'category',
+      'category': 'Jidlo | Pecivo | Bile pecivo | Rohliky',
+      'eid': '836f82db99121b3481011f16b49dfa5fbc714a0d1b1b9f784a1ebbbf5b39577f'
+    };
+
+    runCode(retargetingData);
+
+    assertApi('callInWindow').wasCalledWith('rc.retargetingHit', expected);
 setup: |-
   let conversionData = {
     'codetype': 'conversion',
@@ -1123,13 +1274,37 @@ setup: |-
   };
 
 
+  let retargetingDataMH = {
+    'id': 'ID123',
+    'codetype': 'retargeting',
+    'multipleHitsPerPage': false,
+    'consent_handling': 'no_consent',
+    'disableUpdateListener': false,
+    'model': 'mh',
+    'page': {
+      'type': 'detail'
+    },
+    'products': [{
+      'id': 'ITEM_123/4'
+    }],
+    'user': {
+      'email': 'john.doe@example.com'
+    }
+  };
+
+
   mock('injectScript', function(url, onSuccess, onFailure) {
     onSuccess();
+  });
+
+  mock('sha256', function(inputString, onSuccess, onFailure, options) {
+    if (inputString === 'john.doe@example.com') {
+      return onSuccess('836f82db99121b3481011f16b49dfa5fbc714a0d1b1b9f784a1ebbbf5b39577f');
+    }
+    onFailure();
   });
 
 
 ___NOTES___
 
 Created on 17. 5. 2020 0:30:14
-
-
