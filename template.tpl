@@ -15,7 +15,7 @@ ___INFO___
     "ANALYTICS",
     "ADVERTISING"
   ],
-  "description": "Conversion \u0026 remarketing code for Sklik \u0026 Zbozi. Supporting RC.js code form May 2020.\n@author House of Rezac\n@version 2021-08-12",
+  "description": "Conversion \u0026 remarketing code for Sklik \u0026 Zbozi.\n\n@author Pavel Sabatka\n@version 2024-02-16",
   "securityGroups": [],
   "id": "cvt_temp_public_id",
   "type": "TAG",
@@ -35,6 +35,32 @@ ___TEMPLATE_PARAMETERS___
 
 [
   {
+    "macrosInSelect": false,
+    "selectItems": [
+      {
+        "displayValue": "Conversion",
+        "value": "conversion"
+      },
+      {
+        "value": "retargeting",
+        "displayValue": "Retargeting"
+      },
+      {
+        "value": "clear_user_identities",
+        "displayValue": "Clear User Identity"
+      }
+    ],
+    "valueValidators": [
+      {
+        "type": "NON_EMPTY"
+      }
+    ],
+    "displayName": "Code Type *",
+    "simpleValueType": true,
+    "name": "codetype",
+    "type": "SELECT"
+  },
+  {
     "clearOnCopy": true,
     "alwaysInSummary": true,
     "valueValidators": [
@@ -50,29 +76,45 @@ ___TEMPLATE_PARAMETERS___
     "name": "id",
     "type": "TEXT",
     "help": "Remarketing or conversion ID given from Sklik administration",
-    "valueHint": "12345"
+    "valueHint": "12345",
+    "enablingConditions": [
+      {
+        "paramName": "codetype",
+        "paramValue": "clear_user_identities",
+        "type": "NOT_EQUALS"
+      }
+    ]
   },
   {
-    "macrosInSelect": false,
-    "selectItems": [
-      {
-        "displayValue": "Conversion",
-        "value": "conversion"
-      },
-      {
-        "value": "retargeting",
-        "displayValue": "Retargeting"
-      }
-    ],
+    "clearOnCopy": false,
     "valueValidators": [
       {
         "type": "NON_EMPTY"
       }
     ],
-    "displayName": "Code Type *",
+    "displayName": "Model type",
+    "defaultValue": "vars",
     "simpleValueType": true,
-    "name": "codetype",
-    "type": "SELECT"
+    "name": "model",
+    "type": "RADIO",
+    "radioItems": [
+      {
+        "displayValue": "Measurement Hub",
+        "value": "mh"
+      },
+      {
+        "displayValue": "Standard Variables",
+        "value": "vars"
+      }
+    ],
+    "help": "Measuremet Hub is object oriented standard of dataLayer. Standard variables means separated values for each Sklik parameter.",
+    "enablingConditions": [
+      {
+        "paramName": "codetype",
+        "paramValue": "clear_user_identities",
+        "type": "NOT_EQUALS"
+      }
+    ]
   },
   {
     "enablingConditions": [
@@ -82,7 +124,7 @@ ___TEMPLATE_PARAMETERS___
         "paramValue": "conversion"
       }
     ],
-    "displayName": "Order",
+    "displayName": "Conversion",
     "name": "conversion",
     "groupStyle": "NO_ZIPPY",
     "type": "GROUP",
@@ -94,7 +136,14 @@ ___TEMPLATE_PARAMETERS___
         "simpleValueType": true,
         "canBeEmptyString": false,
         "valueHint": "",
-        "help": "Unique transaction ID"
+        "help": "Unique transaction ID",
+        "enablingConditions": [
+          {
+            "paramName": "model",
+            "paramValue": "vars",
+            "type": "EQUALS"
+          }
+        ]
       },
       {
         "clearOnCopy": false,
@@ -103,7 +152,30 @@ ___TEMPLATE_PARAMETERS___
         "name": "revenue",
         "type": "TEXT",
         "help": "Total revenue of transaction",
-        "valueHint": "12345.12"
+        "valueHint": "12345.12",
+        "enablingConditions": [
+          {
+            "paramName": "model",
+            "paramValue": "vars",
+            "type": "EQUALS"
+          }
+        ]
+      },
+      {
+        "type": "SELECT",
+        "name": "order",
+        "displayName": "{{aac.order}}",
+        "macrosInSelect": true,
+        "selectItems": [],
+        "simpleValueType": true,
+        "enablingConditions": [
+          {
+            "paramName": "model",
+            "paramValue": "mh",
+            "type": "EQUALS"
+          }
+        ],
+        "help": "Object of order"
       },
       {
         "type": "TEXT",
@@ -166,30 +238,6 @@ ___TEMPLATE_PARAMETERS___
     "type": "GROUP",
     "subParams": [
       {
-        "clearOnCopy": false,
-        "valueValidators": [
-          {
-            "type": "NON_EMPTY"
-          }
-        ],
-        "displayName": "Model type",
-        "defaultValue": "vars",
-        "simpleValueType": true,
-        "name": "model",
-        "type": "RADIO",
-        "radioItems": [
-          {
-            "displayValue": "Measurement Hub",
-            "value": "mh"
-          },
-          {
-            "displayValue": "Standard Variables",
-            "value": "vars"
-          }
-        ],
-        "help": "Measuremet Hub is object oriented standard of dataLayer. Standard variables means separated values for each Sklik parameter."
-      },
-      {
         "notSetText": "Not set",
         "clearOnCopy": false,
         "macrosInSelect": true,
@@ -219,7 +267,6 @@ ___TEMPLATE_PARAMETERS___
           }
         ],
         "displayName": "{{aac.products}}",
-        "defaultValue": "{{aac.products}}",
         "simpleValueType": true,
         "name": "products",
         "type": "SELECT"
@@ -241,7 +288,7 @@ ___TEMPLATE_PARAMETERS___
       },
       {
         "notSetText": "Not set",
-        "macrosInSelect": false,
+        "macrosInSelect": true,
         "selectItems": [
           {
             "displayValue": "Category",
@@ -263,35 +310,27 @@ ___TEMPLATE_PARAMETERS___
         "simpleValueType": true,
         "name": "pagetype",
         "type": "SELECT",
-        "help": "Page type will be fetched from object page.type if this value is null. If it is needed to change that, you can submit new key."
+        "help": "Type of page. Expected values are product.detail, detail, offerdetail (for product detail page) or category (for product category page)"
       },
       {
-        "enablingConditions": [
-          {
-            "paramName": "pagetype",
-            "type": "EQUALS",
-            "paramValue": "offerdetail"
-          }
-        ],
+        "enablingConditions": [],
         "displayName": "Item ID",
         "simpleValueType": true,
         "name": "itemId",
         "type": "TEXT",
-        "canBeEmptyString": false
+        "canBeEmptyString": false,
+        "alwaysInSummary": true,
+        "help": "ID of product on product detail page"
       },
       {
-        "enablingConditions": [
-          {
-            "paramName": "pagetype",
-            "type": "EQUALS",
-            "paramValue": "category"
-          }
-        ],
+        "enablingConditions": [],
         "displayName": "Category",
         "simpleValueType": true,
         "name": "category",
         "type": "TEXT",
-        "canBeEmptyString": false
+        "canBeEmptyString": false,
+        "alwaysInSummary": true,
+        "help": "Category name"
       },
       {
         "displayName": "Custom URL",
@@ -300,6 +339,203 @@ ___TEMPLATE_PARAMETERS___
         "type": "TEXT",
         "canBeEmptyString": true,
         "help": "Custom params can be put into URL here. Hostname and pathname of Custom URL must be same as real URL! Otherwise Sklik will not accept this parameter.\nYou can use it e.g. for scroll tracking or targeting to JS executed actions on page."
+      }
+    ]
+  },
+  {
+    "type": "GROUP",
+    "name": "identity",
+    "displayName": "User Identity",
+    "groupStyle": "ZIPPY_OPEN_ON_PARAM",
+    "subParams": [
+      {
+        "type": "SELECT",
+        "name": "user",
+        "displayName": "{{aac.user}}",
+        "macrosInSelect": true,
+        "selectItems": [],
+        "simpleValueType": true,
+        "enablingConditions": [
+          {
+            "paramName": "model",
+            "paramValue": "mh",
+            "type": "EQUALS"
+          }
+        ],
+        "alwaysInSummary": true,
+        "help": ""
+      },
+      {
+        "type": "TEXT",
+        "name": "userEmail",
+        "displayName": "Email Hash (recommended) or Email",
+        "simpleValueType": true,
+        "alwaysInSummary": true,
+        "help": "Email hash or Email, recommended.\nIf you enter a non-hashed email, it will be encoded automatically and only the encoded value will be passed to the remarketing code. We recommend passing the email hash directly using the sha256 function, some browsers may not support the hashing function.",
+        "enablingConditions": [
+          {
+            "paramName": "model",
+            "paramValue": "vars",
+            "type": "EQUALS"
+          }
+        ]
+      },
+      {
+        "type": "TEXT",
+        "name": "userPhone",
+        "displayName": "Phone",
+        "simpleValueType": true,
+        "alwaysInSummary": true,
+        "help": "Optional. Phone number in format +420777123456",
+        "enablingConditions": [
+          {
+            "paramName": "model",
+            "paramValue": "vars",
+            "type": "EQUALS"
+          }
+        ]
+      },
+      {
+        "type": "GROUP",
+        "name": "userAddress",
+        "displayName": "Address",
+        "groupStyle": "NO_ZIPPY",
+        "subParams": [
+          {
+            "type": "TEXT",
+            "name": "country",
+            "displayName": "Country",
+            "simpleValueType": true,
+            "alwaysInSummary": false,
+            "help": "Optional. It is possible to submit any format, Seznam use the advanced matching algorithm.",
+            "enablingConditions": [
+              {
+                "paramName": "model",
+                "paramValue": "vars",
+                "type": "EQUALS"
+              }
+            ]
+          },
+          {
+            "type": "TEXT",
+            "name": "city",
+            "displayName": "City",
+            "simpleValueType": true,
+            "alwaysInSummary": false,
+            "help": "Optional. It is possible to submit any format, Seznam use the advanced matching algorithm.",
+            "enablingConditions": [
+              {
+                "paramName": "model",
+                "paramValue": "vars",
+                "type": "EQUALS"
+              }
+            ]
+          },
+          {
+            "type": "TEXT",
+            "name": "street",
+            "displayName": "Street",
+            "simpleValueType": true,
+            "alwaysInSummary": false,
+            "help": "Optional. It is possible to submit any format, Seznam use the advanced matching algorithm.",
+            "enablingConditions": [
+              {
+                "paramName": "model",
+                "paramValue": "vars",
+                "type": "EQUALS"
+              }
+            ]
+          },
+          {
+            "type": "TEXT",
+            "name": "streetNumber",
+            "displayName": "Number",
+            "simpleValueType": true,
+            "alwaysInSummary": false,
+            "help": "Optional. It is possible to submit any format, Seznam use the advanced matching algorithm.",
+            "enablingConditions": [
+              {
+                "paramName": "model",
+                "paramValue": "vars",
+                "type": "EQUALS"
+              }
+            ]
+          },
+          {
+            "type": "TEXT",
+            "name": "postalCode",
+            "displayName": "Postal Code",
+            "simpleValueType": true,
+            "alwaysInSummary": false,
+            "help": "Optional. It is possible to submit any format, Seznam use the advanced matching algorithm.",
+            "enablingConditions": [
+              {
+                "paramName": "model",
+                "paramValue": "vars",
+                "type": "EQUALS"
+              }
+            ]
+          }
+        ],
+        "enablingConditions": [
+          {
+            "paramName": "model",
+            "paramValue": "vars",
+            "type": "EQUALS"
+          }
+        ]
+      }
+    ],
+    "enablingConditions": [
+      {
+        "paramName": "codetype",
+        "paramValue": "clear_user_identities",
+        "type": "NOT_EQUALS"
+      }
+    ]
+  },
+  {
+    "type": "GROUP",
+    "name": "identityAdvanced",
+    "displayName": "Advanced User Identity",
+    "groupStyle": "ZIPPY_OPEN_ON_PARAM",
+    "subParams": [
+      {
+        "type": "TEXT",
+        "name": "userSeznamAdId",
+        "displayName": "Seznam Ad ID",
+        "simpleValueType": true,
+        "alwaysInSummary": true,
+        "help": "If user is logged on your site with Seznam Identity, you can use advert_user_id. More information is available on https://vyvojari.seznam.cz/identita/said",
+        "enablingConditions": [
+          {
+            "paramName": "model",
+            "paramValue": "vars",
+            "type": "EQUALS"
+          }
+        ]
+      },
+      {
+        "type": "TEXT",
+        "name": "userCzechAdId",
+        "displayName": "Czech Ad ID",
+        "simpleValueType": true,
+        "alwaysInSummary": true,
+        "help": "More information is available on https://vyvojari.seznam.cz/identita/secid",
+        "enablingConditions": [
+          {
+            "paramName": "model",
+            "paramValue": "vars",
+            "type": "EQUALS"
+          }
+        ]
+      }
+    ],
+    "enablingConditions": [
+      {
+        "paramName": "codetype",
+        "paramValue": "clear_user_identities",
+        "type": "NOT_EQUALS"
       }
     ]
   },
@@ -322,10 +558,6 @@ ___TEMPLATE_PARAMETERS___
           {
             "value": "consent_variable",
             "displayValue": "Load consent status from variable"
-          },
-          {
-            "value": "no_consent",
-            "displayValue": "Consent is not required"
           }
         ],
         "simpleValueType": true,
@@ -335,14 +567,33 @@ ___TEMPLATE_PARAMETERS___
       },
       {
         "type": "GROUP",
-        "name": "consent_variable_group",
-        "displayName": "",
+        "name": "consent_mode_config",
+        "displayName": "Consent Mode Configuration",
         "groupStyle": "NO_ZIPPY",
         "subParams": [
           {
-            "type": "TEXT",
-            "name": "consent_variable_remarketing",
-            "displayName": "Consent Status For Remarketing",
+            "type": "SELECT",
+            "name": "consent_name_remarketing",
+            "displayName": "Consent Type for Retargeting",
+            "macrosInSelect": false,
+            "selectItems": [
+              {
+                "value": "ad_storage",
+                "displayValue": "ad_storage"
+              },
+              {
+                "value": "analytics_storage",
+                "displayValue": "analytics_storage"
+              },
+              {
+                "value": "ad_user_data",
+                "displayValue": "ad_user_data"
+              },
+              {
+                "value": "ad_personalization",
+                "displayValue": "ad_personalization"
+              }
+            ],
             "simpleValueType": true,
             "enablingConditions": [
               {
@@ -350,36 +601,93 @@ ___TEMPLATE_PARAMETERS___
                 "paramValue": "retargeting",
                 "type": "EQUALS"
               }
+            ],
+            "defaultValue": "ad_storage",
+            "help": "",
+            "valueValidators": [
+              {
+                "type": "NON_EMPTY"
+              }
             ]
           },
           {
-            "type": "TEXT",
-            "name": "consent_variable_conversion",
-            "displayName": "Consent Status For Conversion Tracking",
+            "type": "SELECT",
+            "name": "consent_name_conversion",
+            "displayName": "Consent Type for Conversion Tracking",
+            "macrosInSelect": false,
+            "selectItems": [
+              {
+                "value": "ad_storage",
+                "displayValue": "ad_storage"
+              },
+              {
+                "value": "analytics_storage",
+                "displayValue": "analytics_storage"
+              },
+              {
+                "value": "ad_user_data",
+                "displayValue": "ad_user_data"
+              },
+              {
+                "value": "ad_personalization",
+                "displayValue": "ad_personalization"
+              }
+            ],
             "simpleValueType": true,
+            "defaultValue": "analytics_storage",
             "enablingConditions": [
               {
                 "paramName": "codetype",
                 "paramValue": "conversion",
                 "type": "EQUALS"
               }
+            ],
+            "help": "",
+            "valueValidators": [
+              {
+                "type": "NON_EMPTY"
+              }
             ]
-          }
-        ],
-        "enablingConditions": [
+          },
           {
-            "paramName": "consent_handling",
-            "paramValue": "consent_variable",
-            "type": "EQUALS"
-          }
-        ]
-      },
-      {
-        "type": "GROUP",
-        "name": "consent_mode_group",
-        "displayName": "",
-        "groupStyle": "NO_ZIPPY",
-        "subParams": [
+            "type": "SELECT",
+            "name": "consent_name_user_data",
+            "displayName": "Consent Type for Personal Data Tracking",
+            "macrosInSelect": false,
+            "selectItems": [
+              {
+                "value": "ad_storage",
+                "displayValue": "ad_storage"
+              },
+              {
+                "value": "analytics_storage",
+                "displayValue": "analytics_storage"
+              },
+              {
+                "value": "ad_user_data",
+                "displayValue": "ad_user_data"
+              },
+              {
+                "value": "ad_personalization",
+                "displayValue": "ad_personalization"
+              }
+            ],
+            "simpleValueType": true,
+            "defaultValue": "ad_user_data",
+            "help": "",
+            "valueValidators": [
+              {
+                "type": "NON_EMPTY"
+              }
+            ],
+            "enablingConditions": [
+              {
+                "paramName": "consent_handling",
+                "paramValue": "no_consent",
+                "type": "NOT_EQUALS"
+              }
+            ]
+          },
           {
             "type": "CHECKBOX",
             "name": "disableUpdateListener",
@@ -396,6 +704,63 @@ ___TEMPLATE_PARAMETERS___
             "type": "EQUALS"
           }
         ]
+      },
+      {
+        "type": "GROUP",
+        "name": "consent_variable_config",
+        "displayName": "Consent Configuration",
+        "groupStyle": "NO_ZIPPY",
+        "subParams": [
+          {
+            "type": "TEXT",
+            "name": "consent_variable_remarketing",
+            "displayName": "Consent Status For Remarketing",
+            "simpleValueType": true,
+            "enablingConditions": [
+              {
+                "paramName": "codetype",
+                "paramValue": "retargeting",
+                "type": "EQUALS"
+              }
+            ],
+            "help": "Accept values true/false, 1/0, granted/denied"
+          },
+          {
+            "type": "TEXT",
+            "name": "consent_variable_conversion",
+            "displayName": "Consent Status For Conversion Tracking",
+            "simpleValueType": true,
+            "enablingConditions": [
+              {
+                "paramName": "codetype",
+                "paramValue": "conversion",
+                "type": "EQUALS"
+              }
+            ],
+            "help": "Accept values true/false, 1/0, granted/denied"
+          },
+          {
+            "type": "TEXT",
+            "name": "consent_variable_user_data",
+            "displayName": "Consent Status For Transfer of Personal Data",
+            "simpleValueType": true,
+            "help": "Accept values true/false, 1/0, granted/denied"
+          }
+        ],
+        "enablingConditions": [
+          {
+            "paramName": "consent_handling",
+            "paramValue": "consent_variable",
+            "type": "EQUALS"
+          }
+        ]
+      }
+    ],
+    "enablingConditions": [
+      {
+        "paramName": "codetype",
+        "paramValue": "clear_user_identities",
+        "type": "NOT_EQUALS"
       }
     ]
   }
@@ -404,6 +769,10 @@ ___TEMPLATE_PARAMETERS___
 
 ___SANDBOXED_JS_FOR_WEB_TEMPLATE___
 
+/**
+ * Documentation
+ * @see https://vyvojari.seznam.cz/identita/inzerent
+ */
 const log = require('logToConsole');
 const callInWindow = require('callInWindow');
 const injectScript = require('injectScript');
@@ -413,34 +782,217 @@ const makeInteger = require('makeInteger');
 const isConsentGranted = require('isConsentGranted');
 const addConsentListener = require('addConsentListener');
 const templateStorage = require('templateStorage');
+const Object = require('Object');
+
+
+// Set default values (due to compatibility with previous versions)
+data.model = data.model || 'vars';
+data.consent_handling = data.consent_handling || 'consent_mode';
+data.consent_name_remarketing = data.consent_name_remarketing || 'ad_storage';
+data.consent_name_conversion = data.consent_name_conversion || 'analytics_storage';
+data.consent_name_user_data = data.consent_name_user_data || 'ad_user_data';
 
 
 
+/**
+ * Checks if string contains at least one digit
+ * @param str
+ * @return boolean
+ */
+const containsAnyNumber = function(str) {
+  str = ''+str;
+  const nums = '0123456789';
+  for (let i = 0; i < str.length; i++) {
+    if (nums.indexOf(str[i]) > -1) return true;
+  }
+  return false;
+};
 
-const sendRequest = function(params) {
-  const method = 'rc.'+data.codetype+'Hit';
-  const name = data.codetype.toUpperCase();
-  if (templateStorage.getItem('isScriptLoaded')) {
-    callInWindow(method, params);
-    log('SKLIK '+name+': status success', method, params);
-    return data.gtmOnSuccess();
+
+
+/**
+ * Set obj[key] proper value has value (is not null or undefied)
+ *
+ * @param object obj
+ * @param string key
+ * @param string|number mh
+ * @param string|number vals
+ * @return object
+ */
+const addParamIfSet = function(obj, key, mh, vals) {
+  if (data.model === 'mh' && mh) obj[key] = mh;
+  else if (vals) obj[key] = vals;
+  return obj;
+};
+
+
+/**
+ * Parses string in param. If last part contains a digit, uses that part as street number
+ *
+ * @param string
+ * @return array[street, number]
+ */
+const parseStreetNo = function(street) {
+  let parts = street.split(' ');
+  let no = null;
+  if (parts.length > 1 && containsAnyNumber(parts[parts.length - 1])) {
+    no = parts[parts.length - 1];
+    street = parts.slice(0, -1).join(' ');
   } else {
-    const url = 'https://c.seznam.cz/js/rc.js';
-    if (queryPermission('inject_script', url)) {
-      injectScript(url, () => {
-        templateStorage.setItem('isScriptLoaded', true);
-        callInWindow(method, params);
-        log('SKLIK '+name+': loading script success', method, params);
-        return data.gtmOnSuccess();
-      }, () => {
-        log('SKLIK '+name+': loading script failure', params);
-        return data.gtmOnFailure();
-      });
-     } else {
-      log('SKLIK '+name+': status failure: request not allowed', params);
-      return data.gtmOnFailure();
+    no = '';
+  }
+  return [street, no];
+};
+
+
+
+/**
+ * Evaluates user data. If some is available, it will be passed to Sklik script
+ *
+ * @param function callback
+ * @return void
+ */
+const addUserData = function(onSuccess) {
+  if (!isConsentGranted(data.consent_name_user_data)) {
+    return onSuccess();
+  } else if (data.consent_handling === 'consent_mode') {
+    addConsentListener(data.consent_name_user_data, (consentType, granted) => {
+      if (consentType === data.consent_name_user_data && !granted) {
+        log('SKLIK: clearing user identity');
+        callInWindow('sznIVA.IS.clearIdentities', ['said', 'secid', 'eid', 'aid', 'tid']);
+      }
+    });
+  }
+  
+  let user = data.user || {};
+  let address = {};
+  let userData = {};
+  const callback = function() {
+    log('SKLIK: adding user data', userData);
+    return onSuccess();
+  };
+  
+  
+  
+  address = addParamIfSet(address, 'a1', user.country, data.country);
+  address = addParamIfSet(address, 'a2', user.city, data.city);
+  address = addParamIfSet(address, 'a3', user.street, data.street);
+  address = addParamIfSet(address, 'a4', null, data.streetNumber);
+  address = addParamIfSet(address, 'a5', user.postalCode, data.postalCode);
+  
+  if (address.a3 && !address.a4) {
+    let s = parseStreetNo(address.a3);
+    address.a3 = s[0];
+    address.a4 = s[1];
+  }
+  
+  userData = addParamIfSet(userData, 'eid', user.email, data.userEmail);
+  userData = addParamIfSet(userData, 'tid', user.phone, data.userPhone);
+  userData = addParamIfSet(userData, 'secid', user.secid, data.userCzechAdId);
+  userData = addParamIfSet(userData, 'said', user.said, data.userSeznamAdId);
+  if (Object.keys(address).length) {
+    userData.aid = address;
+  }
+  
+  if (Object.keys(userData).length === 0) {
+    return callback();
+  }
+  
+  
+  // encode user email if needed
+  if (userData.eid && (userData.eid.length != 64 || userData.eid.indexOf('@') > -1)) {
+    let digest = callInWindow('_gtm_mh.sha256', userData.eid); // try to call MH hash
+    if (digest) {
+      userData.eid = digest;
+    } else {
+      const sha256 = require('sha256');
+      sha256(userData.eid, (digest) => {
+        userData.eid = digest;
+        callInWindow('sznIVA.IS.updateIdentities', userData);
+        return callback();
+      }, (value) => { // failure
+        log('SKLIK RETARGETING: EID evaluation failed -> removing value', value);
+        userData.eid = undefined;
+        callInWindow('sznIVA.IS.updateIdentities', userData);
+        return callback();
+      }, {outputEncoding: 'hex'});
+      return;
     }
   }
+  
+  
+  callInWindow('sznIVA.IS.updateIdentities', userData);
+  return callback();
+};
+
+
+
+
+/**
+ * Loads Sklik library and calls a callback
+ *
+ * @param function success callback
+ * @param function error callback
+ * @return void
+ */
+const loadLibrary = function(onSuccess, onError) {
+  if (templateStorage.getItem('isScriptLoaded')) {
+    return onSuccess();
+  }
+  
+  const url = 'https://c.seznam.cz/js/rc.js';
+  if (!queryPermission('inject_script', url)) {
+    log('SKLIK: loading script failed due to missing permissions');
+    return onError();
+  }
+  
+  injectScript(url, () => {
+    templateStorage.setItem('isScriptLoaded', true);
+    onSuccess();
+  }, () => {
+    log('SKLIK: loading script failure');
+    onError();
+  });
+};
+
+
+
+/**
+ * Calls a Sklik function for sending request
+ * 
+ * @param object parameters
+ * @return void
+ */
+const sendRequest = function(params) {
+  log('SKLIK: sending '+data.codetype+' request with params', params);
+  const method = 'rc.'+data.codetype+'Hit';
+  callInWindow(method, params);
+  return data.gtmOnSuccess();
+};
+
+
+
+
+/**
+ * Evaluates status of a consent
+ * Possible return values:
+ *
+ *   0     consent denied (or not granted)
+ *   1     consent granted
+ *
+ * @param consent_type
+ * @return integer
+ */
+const getConsentState = function(consentType) {
+  if (data.consent_handling === 'consent_mode') {
+    return makeInteger(isConsentGranted(data['consent_name_'+consentType]));
+  } else if (data.consent_handling === 'consent_variable') {
+    let consent = data['consent_variable_'+consentType];
+    if (consent === 'granted' || consent === 'true' || consent == true) return 1;
+    else if (consent === 'denied' || consent === 'false' || consent == false) return 0;
+    else return makeInteger(consent);
+  }
+  return 0;
 };
 
 
@@ -469,84 +1021,99 @@ if (data.codetype === 'retargeting') {
       if (data.products && data.products.length) {
         params.itemId = data.products[0].id || '';
       }
-      if (data.categorySeznamKey) {
-        params.category = data.page[data.categorySeznamKey] || '';
-      } else {
-        params.category = ((data.page && data.page.category) ? data.page.category.replaceAll('/', ' | ') : '') || '';
+      if (data.category) {
+        if (data.categorySeznamKey) {
+          params.category = data.page[data.categorySeznamKey] || '';
+        } else {
+          params.category = ((data.page && data.page.category) ? data.page.category.replaceAll('/', ' | ') : '') || '';
+        }
       }
 
-    } else {
+    } else { // model vars
       if (data.pagetype) params.pageType = data.pagetype || '';
       if (data.itemId) params.itemId = data.itemId || '';
       if (data.category) params.category = (data.category || '').split('/').join(' | ');
     }
 
-    sendRequest(params);
+    loadLibrary(function() {
+      addUserData(function() {
+        sendRequest(params);
+      });
+    }, data.gtmOnFailure);
   };
 
   
-  let consent = -1;
-  if (data.consent_handling === 'consent_mode') {
-    consent = makeInteger(isConsentGranted('ad_storage'));
-  } else if (data.consent_handling === 'consent_variable') {
-    consent = makeInteger(data.consent_variable_remarketing);
-  }
+
+  let consent = getConsentState('remarketing');
 
   if (consent === 0 && !data.disableUpdateListener && data.consent_handling === 'consent_mode') {
-    addConsentListener('ad_storage', (consentType, granted) => {
+    addConsentListener(data.consent_name_remarketing, (consentType, granted) => {
       log('SKLIK RETARGETING: callback called, consent:', granted);
-      if (consentType === 'ad_storage' && granted) {
+      if (consentType === data.consent_name_remarketing && granted) {
         sendRemarketingHit(makeInteger(granted));
       }
     });
     log('SKLIK RETARGETING: callback inited');
+    data.gtmOnSuccess();
   } else if (consent) {
     sendRemarketingHit(consent);
+  } else {
+    log('SKLIK RETARGETING: sending no hit due to missing consent');
+    data.gtmOnSuccess();
   }
 
   
 
 } else if (data.codetype === 'conversion') {
 
-  
-  const trackConversion = function(consent) {
+  const sendConversionHit = function(consent) {
     log('SKLIK CONVERSION: preparing request', data);
-    let revenue = (data.model === 'mh' ? data.order.revenue : data.revenue) || null;
-    revenue = (revenue ? (Math.round(revenue*100) / 100) : '');
     
     let params = {
       'id': data.id
     };
     
-    if (consent > -1) params.consent = consent;
-    if (revenue) params.value = revenue;
-    if (data.orderId) params.orderId = data.orderId;
+    params = addParamIfSet(params, 'orderId', data.order ? data.order.id : null, data.orderId);
+    params = addParamIfSet(params, 'value', data.order ? data.order.revenue : null, data.revenue);
+    if (params.value) params.value = (Math.round(params.value * 100) / 100);
+    
+
     if (data.zboziType) params.zboziType = data.zboziType;
     if (data.zboziId) params.zboziId = data.zboziId;
     
-    sendRequest(params);
-  };
-  
-  let consent = -1;
-  if (data.consent_handling === 'consent_mode') {
-    consent = makeInteger(isConsentGranted('analytics_storage'));
-  } else if (data.consent_handling === 'consent_variable') {
-    consent = makeInteger(data.consent_variable_conversion);
-  }
+    if (consent > -1) params.consent = consent;
+    
 
+    loadLibrary(function() {
+      addUserData(function() {
+        sendRequest(params);
+      });
+    }, data.gtmOnFailure);
+  };
+
+  let consent = getConsentState('conversion');
 
   if (consent === 0 && !data.disableUpdateListener && data.consent_handling === 'consent_mode') {
-    addConsentListener('analytics_storage', (consentType, granted) => {
+    addConsentListener(data.consent_name_conversion, (consentType, granted) => {
       log('SKLIK CONVERSION: callback called, consent:', granted);
-      if (consentType === 'analytics_storage' && granted) {
-        trackConversion(makeInteger(granted));
+      if (consentType === data.consent_name_conversion && granted) {
+        sendConversionHit(makeInteger(granted));
       }
     });
     log('SKLIK CONVERSION: callback inited, consent:', consent);
+    data.gtmOnSuccess();
   }
-  trackConversion(consent);
+  sendConversionHit(consent);
   
 
+  
+  
+} else if (data.codetype === 'clear_user_identities') {
+  log('SKLIK CLEARING USER IDENTITY');
+  if (templateStorage.getItem('isScriptLoaded')) {
+    callInWindow('sznIVA.IS.clearIdentities', ['said', 'secid', 'eid', 'aid', 'tid']);
+  }
+  
   
 } else {
   log('Unknown codetype ' + data.codetype);
@@ -706,6 +1273,123 @@ ___WEB_PERMISSIONS___
                     "boolean": true
                   }
                 ]
+              },
+              {
+                "type": 3,
+                "mapKey": [
+                  {
+                    "type": 1,
+                    "string": "key"
+                  },
+                  {
+                    "type": 1,
+                    "string": "read"
+                  },
+                  {
+                    "type": 1,
+                    "string": "write"
+                  },
+                  {
+                    "type": 1,
+                    "string": "execute"
+                  }
+                ],
+                "mapValue": [
+                  {
+                    "type": 1,
+                    "string": "_gtm_mh.sha256"
+                  },
+                  {
+                    "type": 8,
+                    "boolean": false
+                  },
+                  {
+                    "type": 8,
+                    "boolean": false
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  }
+                ]
+              },
+              {
+                "type": 3,
+                "mapKey": [
+                  {
+                    "type": 1,
+                    "string": "key"
+                  },
+                  {
+                    "type": 1,
+                    "string": "read"
+                  },
+                  {
+                    "type": 1,
+                    "string": "write"
+                  },
+                  {
+                    "type": 1,
+                    "string": "execute"
+                  }
+                ],
+                "mapValue": [
+                  {
+                    "type": 1,
+                    "string": "sznIVA.IS.updateIdentities"
+                  },
+                  {
+                    "type": 8,
+                    "boolean": false
+                  },
+                  {
+                    "type": 8,
+                    "boolean": false
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  }
+                ]
+              },
+              {
+                "type": 3,
+                "mapKey": [
+                  {
+                    "type": 1,
+                    "string": "key"
+                  },
+                  {
+                    "type": 1,
+                    "string": "read"
+                  },
+                  {
+                    "type": 1,
+                    "string": "write"
+                  },
+                  {
+                    "type": 1,
+                    "string": "execute"
+                  }
+                ],
+                "mapValue": [
+                  {
+                    "type": 1,
+                    "string": "sznIVA.IS.clearIdentities"
+                  },
+                  {
+                    "type": 8,
+                    "boolean": false
+                  },
+                  {
+                    "type": 8,
+                    "boolean": false
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  }
+                ]
               }
             ]
           }
@@ -816,6 +1500,68 @@ ___WEB_PERMISSIONS___
                     "boolean": false
                   }
                 ]
+              },
+              {
+                "type": 3,
+                "mapKey": [
+                  {
+                    "type": 1,
+                    "string": "consentType"
+                  },
+                  {
+                    "type": 1,
+                    "string": "read"
+                  },
+                  {
+                    "type": 1,
+                    "string": "write"
+                  }
+                ],
+                "mapValue": [
+                  {
+                    "type": 1,
+                    "string": "ad_user_data"
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": false
+                  }
+                ]
+              },
+              {
+                "type": 3,
+                "mapKey": [
+                  {
+                    "type": 1,
+                    "string": "consentType"
+                  },
+                  {
+                    "type": 1,
+                    "string": "read"
+                  },
+                  {
+                    "type": 1,
+                    "string": "write"
+                  }
+                ],
+                "mapValue": [
+                  {
+                    "type": 1,
+                    "string": "ad_personalization"
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": false
+                  }
+                ]
               }
             ]
           }
@@ -858,7 +1604,8 @@ scenarios:
       'value': 99.10,
       'orderId': 'T_112233',
       'zboziType': 'standard',
-      'zboziId': '54321'
+      'zboziId': '54321',
+      'consent': 1
     };
 
     runCode(conversionData);
@@ -874,7 +1621,8 @@ scenarios:
       'value': 99.10,
       'orderId': 'T_112233',
       'zboziType': 'standard',
-      'zboziId': '54321'
+      'zboziId': '54321',
+      'consent': 1
     };
 
     runCode(conversionData);
@@ -882,11 +1630,17 @@ scenarios:
     assertApi('callInWindow').wasCalledWith('rc.conversionHit', expected);
 - name: Conversion - consent mode - approved
   code: |-
-    conversionData.consent_handling = 'consent_mode';
-    mock('isConsentGranted', function(consentType) {
-      return true;
-    });
+    let expected = {
+      'id': 'ID123',
+      'value': 99.10,
+      'orderId': 'T_112233',
+      'consent': 1
+    };
 
+    runCode(conversionData);
+    assertApi('callInWindow').wasCalledWith('rc.conversionHit', expected);
+- name: Conversion - consent mode - undefined
+  code: |-
     let expected = {
       'id': 'ID123',
       'value': 99.10,
@@ -898,10 +1652,12 @@ scenarios:
     assertApi('callInWindow').wasCalledWith('rc.conversionHit', expected);
 - name: Conversion - consent mode - rejected
   code: |-
-    conversionData.consent_handling = 'consent_mode';
-    mock('isConsentGranted', function(consentType) {
-      return false;
-    });
+    consent = {
+      'ad_storage': false,
+      'ad_personalization': false,
+      'ad_user_data': false,
+      'analytics_storage': false,
+    };
 
     let expected = {
       'id': 'ID123',
@@ -916,6 +1672,7 @@ scenarios:
   code: |-
     conversionData.consent_handling = 'consent_variable';
     conversionData.consent_variable_conversion = true;
+    conversionData.consent_variable_user_data = true;
 
     let expected = {
       'id': 'ID123',
@@ -931,6 +1688,7 @@ scenarios:
   code: |-
     conversionData.consent_handling = 'consent_variable';
     conversionData.consent_variable_conversion = false;
+    conversionData.consent_variable_user_data = false;
 
     let expected = {
       'id': 'ID123',
@@ -944,11 +1702,8 @@ scenarios:
     assertApi('addConsentListener').wasNotCalled();
 - name: Conversion - consent mode - rejected - listener was added
   code: |-
-    conversionData.consent_handling = 'consent_mode';
-    conversionData.disableUpdateListener = false;
-    mock('isConsentGranted', function(consentType) {
-      return false;
-    });
+    consent.analytics_storage = false;
+    consent.ad_user_data = false;
 
     runCode(conversionData);
 
@@ -962,19 +1717,6 @@ scenarios:
     runCode(conversionData);
     assertApi('callInWindow').wasCalledWith('rc.conversionHit', expected);
     assertApi('addConsentListener').wasCalled();
-- name: Conversion - no consent mode
-  code: |-
-    conversionData.consent_handling = 'no_consent';
-
-    let expected = {
-      'id': 'ID123',
-      'value': 99.10,
-      'orderId': 'T_112233'
-    };
-
-    runCode(conversionData);
-    assertApi('callInWindow').wasCalledWith('rc.conversionHit', expected);
-    assertApi('isConsentGranted').wasNotCalled();
 - name: Retargeting - basic retargeting
   code: |-
     mock('injectScript', function(url, onSuccess, onFailure) {
@@ -986,7 +1728,8 @@ scenarios:
 
 
     let expected = {
-      'rtgId': 'ID123'
+      'rtgId': 'ID123',
+      'consent': 1
     };
 
     runCode(retargetingData);
@@ -1002,6 +1745,7 @@ scenarios:
       'rtgId': 'ID123',
       'pageType': 'category',
       'category': 'Jidlo | Pecivo | Bile pecivo | Rohliky',
+      'consent': 1
     };
 
     runCode(retargetingData);
@@ -1016,7 +1760,8 @@ scenarios:
     let expected = {
       'rtgId': 'ID123',
       'pageType': 'offerdetail',
-      'itemId': 'ITEM_123/4'
+      'itemId': 'ITEM_123/4',
+      'consent': 1
     };
 
     runCode(retargetingData);
@@ -1028,7 +1773,8 @@ scenarios:
 
     let expected = {
       'rtgId': 'ID123',
-      'rtgUrl': 'https://example.com/foo?bar=1'
+      'rtgUrl': 'https://example.com/foo?bar=1',
+      'consent': 1
     };
 
     runCode(retargetingData);
@@ -1046,18 +1792,6 @@ scenarios:
 
     assertApi('addConsentListener').wasCalled();
     assertApi('callInWindow').wasNotCalled();
-- name: Retargeting - no consent mode
-  code: |-
-    retargetingData.consent_handling = 'no_consent';
-
-    let expected = {
-      'rtgId': 'ID123'
-    };
-
-    runCode(retargetingData);
-
-    assertApi('isConsentGranted').wasNotCalled();
-    assertApi('callInWindow').wasCalledWith('rc.retargetingHit', expected);
 - name: Retargeting - consent from variable - approved
   code: |-
     retargetingData.consent_handling = 'consent_variable';
@@ -1082,13 +1816,256 @@ scenarios:
     assertApi('isConsentGranted').wasNotCalled();
     assertApi('callInWindow').wasNotCalled();
     assertApi('addConsentListener').wasNotCalled();
+- name: User Data - Retargeting - data from MH
+  code: |-
+    runCode(retargetingDataMH);
+
+    assertApi('callInWindow').wasCalledWith('rc.retargetingHit', {
+      'rtgId': 'ID123',
+      'pageType': 'offerdetail',
+      'itemId': 'ITEM_123/4',
+      'consent': 1
+    });
+    assertApi('callInWindow').wasCalledWith('sznIVA.IS.updateIdentities', {
+      'eid': '836f82db99121b3481011f16b49dfa5fbc714a0d1b1b9f784a1ebbbf5b39577f',
+      'tid': '+420777123456'
+    });
+- name: User Data -Retargeting- data from vars
+  code: |-
+    retargetingData.model = 'vars';
+    retargetingData.pagetype = 'category';
+    retargetingData.category = 'Jidlo/Pecivo/Bile pecivo/Rohliky';
+    retargetingData.userEmail = 'john.doe@example.com';
+    retargetingData.userPhone = '+420777123456';
+    retargetingData.country = 'Czechia';
+    retargetingData.city = 'Brno';
+    retargetingData.street = 'Veveří';
+    retargetingData.streetNumber = '123';
+    retargetingData.postalCode = '60200';
+
+
+    runCode(retargetingData);
+
+    assertApi('callInWindow').wasCalledWith('rc.retargetingHit', {
+      'rtgId': 'ID123',
+      'pageType': 'category',
+      'category': 'Jidlo | Pecivo | Bile pecivo | Rohliky',
+      'consent': 1
+    });
+    assertApi('callInWindow').wasCalledWith('sznIVA.IS.updateIdentities', {
+      'eid': '836f82db99121b3481011f16b49dfa5fbc714a0d1b1b9f784a1ebbbf5b39577f',
+      'tid': '+420777123456',
+      'aid': {
+        'a1': 'Czechia',
+        'a2': 'Brno',
+        'a3': 'Veveří',
+        'a4': '123',
+        'a5': '60200',
+      }
+    });
+- name: User Data - Retargeting - email hash from vars
+  code: |-
+    retargetingData.model = 'vars';
+    retargetingData.pagetype = 'category';
+    retargetingData.category = 'Jidlo/Pecivo/Bile pecivo/Rohliky';
+    retargetingData.userEmail = '836f82db99121b3481011f16b49dfa5fbc714a0d1b1b9f784a1ebbbf5b39577f';
+    retargetingData.userPhone = '+420777123456';
+    retargetingData.country = 'Czechia';
+    retargetingData.city = 'Brno';
+    retargetingData.street = 'Veveří';
+    retargetingData.streetNumber = '123';
+    retargetingData.postalCode = '60200';
+
+
+    runCode(retargetingData);
+
+    assertApi('callInWindow').wasCalledWith('rc.retargetingHit', {
+      'rtgId': 'ID123',
+      'pageType': 'category',
+      'category': 'Jidlo | Pecivo | Bile pecivo | Rohliky',
+      'consent': 1
+    });
+    assertApi('callInWindow').wasCalledWith('sznIVA.IS.updateIdentities', {
+      'eid': '836f82db99121b3481011f16b49dfa5fbc714a0d1b1b9f784a1ebbbf5b39577f',
+      'tid': '+420777123456',
+      'aid': {
+        'a1': 'Czechia',
+        'a2': 'Brno',
+        'a3': 'Veveří',
+        'a4': '123',
+        'a5': '60200',
+      }
+    });
+- name: User Data - Retargeting - consent denied
+  code: |-
+    retargetingData.consent_handling = 'consent_mode';
+    retargetingData.model = 'vars';
+    retargetingData.pagetype = 'category';
+    retargetingData.category = 'Jidlo/Pecivo/Bile pecivo/Rohliky';
+    retargetingData.userEmail = '836f82db99121b3481011f16b49dfa5fbc714a0d1b1b9f784a1ebbbf5b39577f';
+    retargetingData.userPhone = '+420777123456';
+    retargetingData.country = 'Czechia';
+    retargetingData.city = 'Brno';
+    retargetingData.street = 'Veveří';
+    retargetingData.streetNumber = '123';
+    retargetingData.postalCode = '60200';
+
+    mock('isConsentGranted', function(consentType) {
+      if (consentType === 'ad_user_data') return false;
+      return true;
+    });
+
+
+    runCode(retargetingData);
+
+    assertApi('callInWindow').wasCalledWith('rc.retargetingHit', {
+      'rtgId': 'ID123',
+      'pageType': 'category',
+      'category': 'Jidlo | Pecivo | Bile pecivo | Rohliky',
+      'consent': 1
+    });
+    assertApi('callInWindow').wasNotCalledWith('sznIVA.IS.updateIdentities', {
+      'eid': '836f82db99121b3481011f16b49dfa5fbc714a0d1b1b9f784a1ebbbf5b39577f',
+      'tid': '+420777123456',
+      'aid': {
+        'a1': 'Czechia',
+        'a2': 'Brno',
+        'a3': 'Veveří',
+        'a4': '123',
+        'a5': '60200',
+      }
+    });
+- name: User Data - Conversion - data with consent
+  code: |-
+    conversionData.model = 'mh';
+
+    conversionData.order = {
+      'id': 'T_112233',
+      'revenue': 99.10
+    };
+
+    conversionData.user = {
+      'email': 'john.doe@example.com',
+      'phone': '+420777123456',
+      'country': 'Czechia',
+      'city': 'Praha',
+      'street': 'Václavské náměstí 18',
+      'postalCode' : '16000'
+    };
+
+    runCode(conversionData);
+
+    assertApi('callInWindow').wasCalledWith('rc.conversionHit', {
+      'id': 'ID123',
+      'value': 99.10,
+      'orderId': 'T_112233',
+      'consent': 1
+    });
+    assertApi('callInWindow').wasCalledWith('sznIVA.IS.updateIdentities', {
+      'eid': '836f82db99121b3481011f16b49dfa5fbc714a0d1b1b9f784a1ebbbf5b39577f',
+      'tid': '+420777123456',
+      'aid': {
+        'a1': 'Czechia',
+        'a2': 'Praha',
+        'a3': 'Václavské náměstí',
+        'a4': '18',
+        'a5': '16000',
+      }
+    });
+- name: User Data - Conversion - not provided street number
+  code: |-
+    conversionData.model = 'mh';
+
+    conversionData.order = {
+      'id': 'T_112233',
+      'revenue': 99.10
+    };
+
+    conversionData.user = {
+      'email': 'john.doe@example.com',
+      'phone': '+420777123456',
+      'country': 'Czechia',
+      'city': 'Praha',
+      'street': 'Václavské náměstí',
+      'postalCode' : '16000'
+    };
+
+    runCode(conversionData);
+
+    assertApi('callInWindow').wasCalledWith('rc.conversionHit', {
+      'id': 'ID123',
+      'value': 99.10,
+      'orderId': 'T_112233',
+      'consent': 1
+    });
+    assertApi('callInWindow').wasCalledWith('sznIVA.IS.updateIdentities', {
+      'eid': '836f82db99121b3481011f16b49dfa5fbc714a0d1b1b9f784a1ebbbf5b39577f',
+      'tid': '+420777123456',
+      'aid': {
+        'a1': 'Czechia',
+        'a2': 'Praha',
+        'a3': 'Václavské náměstí',
+        'a4': '',
+        'a5': '16000',
+      }
+    });
+- name: Clear User Identity - Function
+  code: |
+    const templateStorage = require('templateStorage');
+    templateStorage.setItem('isScriptLoaded', true);
+    runCode(clearIdentityData);
+    assertApi('callInWindow').wasCalledWith('sznIVA.IS.clearIdentities', ['said', 'secid', 'eid', 'aid', 'tid']);
+- name: Clear User Identity - From Listener
+  code: |-
+    retargetingData.model = 'vars';
+    retargetingData.pagetype = 'category';
+    retargetingData.category = 'Jidlo/Pecivo/Bile pecivo/Rohliky';
+    retargetingData.userEmail = '836f82db99121b3481011f16b49dfa5fbc714a0d1b1b9f784a1ebbbf5b39577f';
+
+    let removeConsentListener;
+
+    let listenerAdded = false;
+    let listenerCallback = function(consentStatus, listener) {
+      assertThat(consentStatus).isEqualTo('ad_user_data');
+      listenerAdded = true;
+      removeConsentListener = listener;
+    };
+
+
+    mock('addConsentListener', listenerCallback);
+    /**/
+
+
+    runCode(retargetingData);
+
+    assertApi('callInWindow').wasCalledWith('rc.retargetingHit', {
+      'rtgId': 'ID123',
+      'pageType': 'category',
+      'category': 'Jidlo | Pecivo | Bile pecivo | Rohliky',
+      'consent': 1
+    });
+    assertApi('callInWindow').wasCalledWith('sznIVA.IS.updateIdentities', {
+      'eid': '836f82db99121b3481011f16b49dfa5fbc714a0d1b1b9f784a1ebbbf5b39577f'
+    });
+
+
+    assertThat(listenerAdded).isTrue();
+
+
+    removeConsentListener('ad_user_data', false);
+
+    assertApi('callInWindow').wasCalledWith('sznIVA.IS.clearIdentities', ['said', 'secid', 'eid', 'aid', 'tid']);
 setup: |-
   let conversionData = {
     'codetype': 'conversion',
+    'model': 'vars',
     'id': 'ID123',
     'revenue': 99.10,
     'orderId': 'T_112233',
-    'consent_handling': 'no_consent',
+    'consent_handling': 'consent_mode',
+    'consent_name_remarketing': 'ad_storage',
+    'consent_name_conversion': 'analytics_storage',
+    'consent_name_user_data': 'ad_user_data',
     'disableUpdateListener': false
   };
 
@@ -1097,13 +2074,75 @@ setup: |-
     'id': 'ID123',
     'codetype': 'retargeting',
     'multipleHitsPerPage': false,
-    'consent_handling': 'no_consent',
+    'consent_handling': 'consent_mode',
+    'consent_name_remarketing': 'ad_storage',
+    'consent_name_conversion': 'analytics_storage',
+    'consent_name_user_data': 'ad_user_data',
     'disableUpdateListener': false
+  };
+
+
+
+  let clearIdentityData = {
+    'id': 'ID123',
+    'codetype': 'clear_user_identities'
+  };
+
+
+
+  let retargetingDataMH = {
+    'id': 'ID123',
+    'codetype': 'retargeting',
+    'multipleHitsPerPage': false,
+    'consent_handling': 'consent_mode',
+    'consent_name_remarketing': 'ad_storage',
+    'consent_name_conversion': 'analytics_storage',
+    'consent_name_user_data': 'ad_user_data',
+    'disableUpdateListener': false,
+    'model': 'mh',
+    'page': {
+      'type': 'detail'
+    },
+    'products': [{
+      'id': 'ITEM_123/4'
+    }],
+    'user': {
+      'email': 'john.doe@example.com',
+      'phone': '+420777123456'
+    }
   };
 
 
   mock('injectScript', function(url, onSuccess, onFailure) {
     onSuccess();
+  });
+
+  mock('sha256', function(inputString, onSuccess, onFailure, options) {
+    if (inputString === 'john.doe@example.com') {
+      return onSuccess('836f82db99121b3481011f16b49dfa5fbc714a0d1b1b9f784a1ebbbf5b39577f');
+    }
+    onFailure();
+  });
+
+  let consent = {
+    'ad_storage': true,
+    'ad_personalization': true,
+    'ad_user_data': true,
+    'analytics_storage': true,
+  };
+
+  mock('isConsentGranted', function(consentType) {
+    switch (consentType) {
+      case 'ad_storage':
+        return consent.ad_storage;
+      case 'ad_personalization':
+        return consent.ad_personalization;
+      case 'ad_user_data':
+        return consent.ad_user_data;
+      case 'analytics_storage':
+        return consent.analytics_storage;
+    }
+    return false;
   });
 
 
