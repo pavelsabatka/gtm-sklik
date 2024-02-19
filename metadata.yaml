@@ -2,7 +2,7 @@ homepage: "https://www.houseofrezac.com"
 documentation: "https://github.com/pavelsabatka/gtm-sklik"
 versions:
   # Latest version
-  - sha: eab86e531c8834ba61ddd7e098c2145757598506
+  - sha: 374a15094f42be60a9309a15be59fbe853aee4bb
     changeNotes: Added user identity advanced matching, update consent handling
   
   # Older versions
