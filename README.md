@@ -1,4 +1,7 @@
 # GTM template for Sklik
+
+[CZ](https://github.com/pavelsabatka/gtm-sklik/edit/master/README.md) | [EN](https://github.com/pavelsabatka/gtm-sklik/edit/master/README-EN.md) | [Changelog](https://github.com/pavelsabatka/gtm-sklik/edit/master/CHANGELOG.md)
+
 Template supports 3 main functions:
 * conversion code
 * remarketing code
