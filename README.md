@@ -1,6 +1,6 @@
 # GTM šablona pro Sklik a Zboží.cz
 
-[CZ](https://github.com/pavelsabatka/gtm-sklik/blob/master/README.md) | [EN](https://github.com/pavelsabatka/gtm-sklik/blob/master/README-EN.md) | [Changelog](https://github.com/pavelsabatka/gtm-sklik/blob/master/CHANGELOG.md)
+[CZ](https://github.com/pavelsabatka/gtm-sklik/blob/master/README.md) | [EN](https://github.com/pavelsabatka/gtm-sklik/blob/master/README-EN.md) | [Changelog](https://github.com/pavelsabatka/gtm-sklik/blob/master/CHANGELOG.md) | [Gallery versions](https://tagmanager.google.com/gallery/#/template/pavelsabatka/gtm-sklik/status)
 
 Šablona má 3 možné nastavení:
 * konverzní kód
