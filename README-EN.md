@@ -73,8 +73,8 @@ No parameters are required.
 
 
 # Consent Handling
-The Sklik template supports different handling with consent. In collapsable menu "Sklik" can choose from 3 different ways:
-* `Consent Mode` - (default option) GTM consent mode is used - consent status is loaded from `ad_storage` and `analytics_storage`. If you choose this option, you can enable/disable the consent listener. If the update listener is enabled, requests are sent automatically if consent is given. You can choose which consent will be checked. If the update listener is disabled you must handle that with GTM triggers.
+The Sklik template supports different handling with consent. In collapsable menu "Sklik" can choose from 2 different ways:
+* `Consent Mode` - (default option) GTM consent mode is used - consent status is loaded from `ad_storage` and `analytics_storage` (it can be changed in configuration). If you choose this option, you can enable/disable the consent listener. If the update listener is enabled, requests are sent automatically if consent is given. If the update listener is disabled you must handle that with GTM triggers.
 ![image](https://github.com/pavelsabatka/gtm-sklik/assets/1794400/0debdb17-ab28-4f37-859c-a690b996616f)
 
 * `Load consent status from variables` - you can read the consent status from the GTM variable. Supported values are granted/denied (string), 1/0 (int|string), true/false (bool).
