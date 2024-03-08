@@ -15,7 +15,7 @@ ___INFO___
     "ANALYTICS",
     "ADVERTISING"
   ],
-  "description": "Conversion \u0026 remarketing code for Sklik \u0026 Zbozi.\n\n@author Pavel Sabatka\n@version 2024-02-16",
+  "description": "Conversion \u0026 remarketing code for Sklik \u0026 Zbozi.\n\n@author Pavel Sabatka\n@version 2024-03-08",
   "securityGroups": [],
   "id": "cvt_temp_public_id",
   "type": "TAG",
@@ -175,7 +175,8 @@ ___TEMPLATE_PARAMETERS___
             "type": "EQUALS"
           }
         ],
-        "help": "Object of order"
+        "help": "Object of order",
+        "notSetText": "Not set"
       },
       {
         "type": "TEXT",
@@ -313,7 +314,13 @@ ___TEMPLATE_PARAMETERS___
         "help": "Type of page. Expected values are product.detail, detail, offerdetail (for product detail page) or category (for product category page)"
       },
       {
-        "enablingConditions": [],
+        "enablingConditions": [
+          {
+            "paramName": "model",
+            "paramValue": "vars",
+            "type": "EQUALS"
+          }
+        ],
         "displayName": "Item ID",
         "simpleValueType": true,
         "name": "itemId",
@@ -323,7 +330,13 @@ ___TEMPLATE_PARAMETERS___
         "help": "ID of product on product detail page"
       },
       {
-        "enablingConditions": [],
+        "enablingConditions": [
+          {
+            "paramName": "model",
+            "paramValue": "vars",
+            "type": "EQUALS"
+          }
+        ],
         "displayName": "Category",
         "simpleValueType": true,
         "name": "category",
@@ -634,7 +647,7 @@ ___TEMPLATE_PARAMETERS___
               }
             ],
             "simpleValueType": true,
-            "defaultValue": "analytics_storage",
+            "defaultValue": "ad_storage",
             "enablingConditions": [
               {
                 "paramName": "codetype",
@@ -1628,6 +1641,24 @@ scenarios:
     runCode(conversionData);
 
     assertApi('callInWindow').wasCalledWith('rc.conversionHit', expected);
+- name: Conversion - models - mh - no data
+  code: |-
+    const mockData = {
+      'codetype': 'conversion',
+      'model': 'mh',
+      'id': 'ID123'
+    };
+
+    const expected = {
+      'id': 'ID123',
+      'consent': 1
+    };
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertApi('gtmOnSuccess').wasCalled();
 - name: Conversion - consent mode - approved
   code: |-
     let expected = {
