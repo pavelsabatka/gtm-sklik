@@ -1,81 +1,84 @@
-# GTM template for Sklik
-Template supports 3 main functions:
-* conversion code
-* remarketing code
-* method for clearing provided user data
+# GTM šablona pro Sklik a Zboží.cz
+
+[CZ](https://github.com/pavelsabatka/gtm-sklik/blob/master/README.md) | [EN](https://github.com/pavelsabatka/gtm-sklik/blob/master/README-EN.md) | [Changelog](https://github.com/pavelsabatka/gtm-sklik/blob/master/CHANGELOG.md) | [Gallery versions](https://tagmanager.google.com/gallery/#/template/pavelsabatka/gtm-sklik/status)
+
+Šablona má 3 možné nastavení:
+* konverzní kód
+* remarketingový kód
+* odebrání identity uživatele - viz sekce Identita uživatele
   
 ![image](https://github.com/pavelsabatka/gtm-sklik/assets/1794400/8bf1906a-b33c-4e6e-a99f-68026c4dd3f9)
 
 #### Model Type
 
-Data to all codes can be submitted in two ways:
+Data mohou být měřicím kódům předávána dvěma způsoby:
 
-* **Standard Variables** - data will be loaded from *Variables*.
-* **Measurement Hub** - expects object-oriented dataLayer structure. Data will be loaded from objects.
+* **Standard Variables** - data v každém poli mohou být vložena s pomocí proměnných GTM *Variables*.
+* **Measurement Hub** - způsob předpokládá objektový přístup k návrhu dataLayer. Šabloně jsou předány objekty (např. objekt `page`), data budou načítána z něj.
 
-## Conversion code
-Conversion tracking for Sklik and Zbozi.
+## Konverzní kód
+Konverzní kód pro Sklik a Zboží.cz.
 
-[Conversion code documentation](https://napoveda.sklik.cz/mereni-uspesnosti/konverze/konverzni-kod/)
+[Dokumentace](https://napoveda.sklik.cz/mereni-uspesnosti/konverze/konverzni-kod/)
 
-### Parameters
-* `Order ID` - uniquie ID of conversion
-* `Revenue` - revenue of conversion
-* `Zbozi Shop ID` (Optional) - shop ID from [zbozi.cz aministration](https://admin.zbozi.cz/)
-* `Zbozi Code Type` (Optional) - type of conversion code - Standard, Limited or Sandbox
+### Parametry
+* `Order ID` - unikátní ID konverze
+* `Revenue` - hodnota konverze
+* `Zbozi Shop ID` (volitelné) - shop ID z [administrace zbozi.cz](https://admin.zbozi.cz/)
+* `Zbozi Code Type` (volitelné) - typ konverzního kódu - Standard, Limited or Sandbox
 
-### Example
+### Příklad
 ![Sklik conversion code configuration](https://github.com/pavelsabatka/gtm-sklik/assets/1794400/98f414b6-c84a-408c-a3ef-e891d2c79986)
 
 
-## Retargeting code
-[Retargeting code documentation](https://napoveda.sklik.cz/cileni/retargeting/retargetingovy-kod/)
+## Retargetingový kód
+[Dokumentace](https://napoveda.sklik.cz/cileni/retargeting/retargetingovy-kod/)
 
-### Parameters
-* `Model type` - Standard variables (1 param = 1 input) or Measurement Hub (readed from object)
-* `Page type` - Category (product or service list) or Offer detail
-* `Category` - [category name](https://napoveda.sklik.cz/cileni/retargeting/pokrocile-nastaveni-rtg-kodu-u-kategorie-category/), only for category pages
-* `Item ID` - [product ID](https://napoveda.sklik.cz/cileni/retargeting/pokrocile-nastaveni-retargetingoveho-kodu/), only for Offer detail pages
-* `Custom URL` (Optional) - an URL with virtual query parameters can be submitted here. Hostname and pathname must be same as real url. Parameter [documentation](https://napoveda.sklik.cz/cileni/retargeting/pokrocile-nastaveni-rtg-kodu-volitelny-query-string/), example for [Sklik remarketing based on time on page](https://napoveda.sklik.cz/cileni/retargeting/pokrocile-nastaveni-rtg-kodu-dle-doby-stravene-na-webu/)
+### Parametry
+* `Page type` - Typ stránky - Category (product or service list), Offer detail, nebo prázdné
+* `Category` - [jméno kategorie](https://napoveda.sklik.cz/cileni/retargeting/pokrocile-nastaveni-rtg-kodu-u-kategorie-category/)
+* `Item ID` - [ID zobrazeného produktu](https://napoveda.sklik.cz/cileni/retargeting/pokrocile-nastaveni-retargetingoveho-kodu/), only for Offer detail pages
+* `Custom URL` (volitelné) - zde může být zadána URL s virtuálními parametry. Pozor, **doména a pathname musí být stejná s reálnou URL**, query parametry lze přidat. [Dokumentace](https://napoveda.sklik.cz/cileni/retargeting/pokrocile-nastaveni-rtg-kodu-volitelny-query-string/), příklad pro [Sklik remarketing s měřením času na stránce](https://napoveda.sklik.cz/cileni/retargeting/pokrocile-nastaveni-rtg-kodu-dle-doby-stravene-na-webu/)
 
-### Example
+### Příklad
 ![Sklik remarketing code](https://github.com/pavelsabatka/gtm-sklik/assets/1794400/3c686751-73d8-42f3-b9a5-2d06206c538c)
 
 
 # User Identity
 [Documentation](https://vyvojari.seznam.cz/identita/inzerent)
 
-### Basic configuration
+### Základní konfigurace
 
-* `Email Hash (Recommended) or Email` - Email hash or Email.
-If you enter a non-hashed email, it will be encoded automatically and only the encoded value will be passed to the remarketing code. We recommend passing the email hash directly using the sha256 function, some browsers may not support the hashing function.
+* `Email Hash (Silně doporučené) or Email` - Email hash (sha256) nebo Email.
+Doporučujeme předávat již zashashovaný email, některé starší prohlížeče hashování nemusí podporovat. Pokud zadáte nezahashovaný email, bude automaticky šablonou zakódován a pak předán Sklik remarketingovému kódu.
 Function `sha256` must be used.
-* `Phone` - (Optional) user's phone in format +420777111222
-* `Address` - (Optional), user's address, you can use any format for data (e.g. Czech Republic, Česká republika, Česko, CZE, ČR,...) - Seznam has an advanced address matching and probably resolves it
+* `Phone` - (volitelné) telefonní číslo ve formátu +420777111222
+* `Address` - (volitelné), adresa, můžete vyplnit libovolný formát polí (e.g. Czech Republic, Česká republika, Česko, CZE, ČR,...) - Seznam používá algoritmus pro standardizaci
 
 ![image](https://github.com/pavelsabatka/gtm-sklik/assets/1794400/090d6d0a-5890-4072-8f3c-c0a8829f5c38)
 
-### Advanced configuration
-* `Seznam Ad ID` - more info in [documentation](https://vyvojari.seznam.cz/identita/said)
-* `Czech Ad ID` - more info in [documentation](https://vyvojari.seznam.cz/identita/secid)
+### Pokročilá konfigurace
+* `Seznam Ad ID` - více informací v [dokumentaci Seznam Ad ID](https://vyvojari.seznam.cz/identita/said)
+* `Czech Ad ID` - více informací [dokumentaci Czech Ad ID](https://vyvojari.seznam.cz/identita/secid)
 
-# Clear provided user data
-Clears an user identity passed to Sklik code. It is not necessary to use this code if you use a consent mode.
+# Odebrání identity uživatele
+Smaže uživatelskou identitu předanou Sklik kódu.
+Pozn.: Toto není třeba řešit pokud požíváte v GTM consent mode, při odebrání souhlasu toto šablona vyřeší za vás.
 
-### Parameters
-No parameters are required.
+### Parametry
+Žádné.
 
-### Example
+### Příklad
 ![image](https://github.com/pavelsabatka/gtm-sklik/assets/1794400/e40ae318-b7fa-44bf-84f5-eb4d3171144f)
 
 
-# Consent Handling
-The Sklik template supports different handling with consent. In collapsable menu "Sklik" can choose from 3 different ways:
-* `Consent Mode` - (default option) GTM consent mode is used - consent status is loaded from `ad_storage` and `analytics_storage`. If you choose this option, you can enable/disable the consent listener. If the update listener is enabled, requests are sent automatically if consent is given. You can choose which consent will be checked. If the update listener is disabled you must handle that with GTM triggers.
+# Práce se souhlasem
+Šablona podporuje dva různé druhy práce se souhlasem, které můžete vybrat z menu:
+* `Consent Mode` - (výchozí) stav souhlasu je načítán z GTM consent mode - stav souhlasu je načítán z `ad_storage` a `analytics_storage` (lze změnit v nastavení).
+Pokud zvolíte tuto možnost, můžete povolit nebo zakázat update listener. Pokud nemáme souhlas listener je povolen, data jsou šablonou automaticky posílána po udělelní souhlasu. Pokud listener zakážete, musíte po udělení souhlasu značku sami znovu spustit (přidat další trigger).
 ![image](https://github.com/pavelsabatka/gtm-sklik/assets/1794400/0debdb17-ab28-4f37-859c-a690b996616f)
 
-* `Load consent status from variables` - you can read the consent status from the GTM variable. Supported values are granted/denied (string), 1/0 (int|string), true/false (bool).
+* `Load consent status from variables` - pokud chcete stav souhlasu načítat z proměnných. Předané proměnné musí vracet hodnoty granted/denied (string), 1/0 (int|string), true/false (bool).
 ![image](https://github.com/pavelsabatka/gtm-sklik/assets/1794400/896da879-84a9-40e6-9021-cf3bbfc4f217)
 
-Note: option `No consent required` is no longer supported
-
+Pozn: možnost `No consent required` není od 21. 2. 2024 podporována
