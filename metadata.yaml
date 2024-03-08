@@ -2,10 +2,13 @@ homepage: "https://www.houseofrezac.com"
 documentation: "https://github.com/pavelsabatka/gtm-sklik"
 versions:
   # Latest version
+  - sha: 1cc1fb2ba7900842ac0e67cd8ec64da24bc84134
+    changeNotes: Default consent ad_storage for conversion tracking, minor fixes
+  
+  # Older versions
   - sha: d0e8d0853af81479991b2bd966c7c42acb7bbc2e
     changeNotes: Added user identity advanced matching, update consent handling
   
-  # Older versions
   - sha: 496dcdabb5659c58e4b74b757825de454a359335
     changeNotes: Added support for eid parameter
   
