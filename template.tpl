@@ -807,6 +807,36 @@ data.consent_name_user_data = data.consent_name_user_data || 'ad_user_data';
 
 
 
+
+/**
+ * Evaluates status of a consent
+ * Possible return values:
+ *
+ *   0     consent denied (or not granted)
+ *   1     consent granted
+ *
+ * @param consent_type
+ * @return integer
+ */
+const getConsentState = function(consentType) {
+  if (consentType === 'retargeting') consentType = 'remarketing';
+  if (consentType === 'ad_user_data') consentType = 'user_data';
+    
+  if (data.consent_handling === 'consent_mode') {
+    return makeInteger(isConsentGranted(data['consent_name_'+consentType]));
+
+  } else if (data.consent_handling === 'consent_variable') {
+    let consent = data['consent_variable_'+consentType];
+    if (consent === 'granted' || consent === 'true' || consent == true) return 1;
+    else if (consent === 'denied' || consent === 'false' || consent == false) return 0;
+    else return makeInteger(consent);
+  }
+  return 0;
+};
+
+
+
+
 /**
  * Checks if string contains at least one digit
  * @param str
@@ -866,7 +896,7 @@ const parseStreetNo = function(street) {
  * @return void
  */
 const addUserData = function(onSuccess) {
-  if (!isConsentGranted(data.consent_name_user_data)) {
+  if (!getConsentState(data.consent_name_user_data)) {
     return onSuccess();
   } else if (data.consent_handling === 'consent_mode') {
     addConsentListener(data.consent_name_user_data, (consentType, granted) => {
@@ -985,36 +1015,62 @@ const sendRequest = function(params) {
 
 
 
+/**
+ * Declare dummy function, it is rewritten below
+ */
+let prepareParams = function(consent) { return {}; };
+
 
 /**
- * Evaluates status of a consent
- * Possible return values:
+ * Resolves dependency of functions (like loading library, adding used data etc.) while sending hit
  *
- *   0     consent denied (or not granted)
- *   1     consent granted
- *
- * @param consent_type
- * @return integer
+ * @param int consent
+ * @return void
  */
-const getConsentState = function(consentType) {
-  if (data.consent_handling === 'consent_mode') {
-    return makeInteger(isConsentGranted(data['consent_name_'+consentType]));
-  } else if (data.consent_handling === 'consent_variable') {
-    let consent = data['consent_variable_'+consentType];
-    if (consent === 'granted' || consent === 'true' || consent == true) return 1;
-    else if (consent === 'denied' || consent === 'false' || consent == false) return 0;
-    else return makeInteger(consent);
-  }
-  return 0;
+const prepareAndSendHit = function(consent) {
+  let params = prepareParams(consent);
+  loadLibrary(function() {
+    addUserData(function() {
+      sendRequest(params);
+    });
+  }, data.gtmOnFailure);
 };
 
+
+
+/**
+ * Resolves all things accoring a consent configuration
+ * If consent mode is used, adds a consent listener if consent is not granted
+ * 
+ * @param string consentType
+ * @param function callback
+ * @return void
+ */
+const resolveConsent = function(consentType, callback) {
+  let consent = getConsentState(consentType);
+  let consentName = data['consent_name_'+consentType];
+  
+  log('SKLIK consent for '+consentName+': ', consent, ', consent hadnling:', data.consent_handling, ', disableUpdateListener:', data.disableUpdateListener);
+  
+  if (consent === 0 && !data.disableUpdateListener && data.consent_handling === 'consent_mode') {
+    addConsentListener(consentName, (consentType, granted) => {
+	  log('SKLIK '+data.codetype+': callback called, consent:', granted);
+      if (consentType === consentName && granted) {
+	    callback(makeInteger(granted));
+	  }
+    });
+    log('SKLIK '+data.codetype+': callback inited, consent:', consent);
+    data.gtmOnSuccess();
+  }
+  callback(consent);
+};
 
 
 
 if (data.codetype === 'retargeting') {
 
-  const sendRemarketingHit = function(consent) {
-    log('SKLIK RETARGETING: preparing request', data);
+  prepareParams = function(consent) {
+    log('SKLIK RETARGETING: preparing request', data, consent);
     let params = {
       'rtgId': data.id
     };
@@ -1047,39 +1103,17 @@ if (data.codetype === 'retargeting') {
       if (data.itemId) params.itemId = data.itemId || '';
       if (data.category) params.category = (data.category || '').split('/').join(' | ');
     }
-
-    loadLibrary(function() {
-      addUserData(function() {
-        sendRequest(params);
-      });
-    }, data.gtmOnFailure);
+    
+    return params;
   };
-
-  
-
-  let consent = getConsentState('remarketing');
-
-  if (consent === 0 && !data.disableUpdateListener && data.consent_handling === 'consent_mode') {
-    addConsentListener(data.consent_name_remarketing, (consentType, granted) => {
-      log('SKLIK RETARGETING: callback called, consent:', granted);
-      if (consentType === data.consent_name_remarketing && granted) {
-        sendRemarketingHit(makeInteger(granted));
-      }
-    });
-    log('SKLIK RETARGETING: callback inited');
-    data.gtmOnSuccess();
-  } else if (consent) {
-    sendRemarketingHit(consent);
-  } else {
-    log('SKLIK RETARGETING: sending no hit due to missing consent');
-    data.gtmOnSuccess();
-  }
+ 
+  resolveConsent('remarketing', prepareAndSendHit);
 
   
 
 } else if (data.codetype === 'conversion') {
 
-  const sendConversionHit = function(consent) {
+  prepareParams = function(consent) {
     log('SKLIK CONVERSION: preparing request', data);
     
     let params = {
@@ -1096,28 +1130,10 @@ if (data.codetype === 'retargeting') {
     
     if (consent > -1) params.consent = consent;
     
-
-    loadLibrary(function() {
-      addUserData(function() {
-        sendRequest(params);
-      });
-    }, data.gtmOnFailure);
+    return params;
   };
 
-  let consent = getConsentState('conversion');
-
-  if (consent === 0 && !data.disableUpdateListener && data.consent_handling === 'consent_mode') {
-    addConsentListener(data.consent_name_conversion, (consentType, granted) => {
-      log('SKLIK CONVERSION: callback called, consent:', granted);
-      if (consentType === data.consent_name_conversion && granted) {
-        sendConversionHit(makeInteger(granted));
-      }
-    });
-    log('SKLIK CONVERSION: callback inited, consent:', consent);
-    data.gtmOnSuccess();
-  }
-  sendConversionHit(consent);
-  
+  resolveConsent('conversion', prepareAndSendHit);  
 
   
   
@@ -1822,7 +1838,7 @@ scenarios:
     runCode(retargetingData);
 
     assertApi('addConsentListener').wasCalled();
-    assertApi('callInWindow').wasNotCalled();
+    assertApi('callInWindow').wasCalledWith('rc.retargetingHit', {"rtgId":"ID123","consent":0});
 - name: Retargeting - consent from variable - approved
   code: |-
     retargetingData.consent_handling = 'consent_variable';
@@ -1845,7 +1861,7 @@ scenarios:
     runCode(retargetingData);
 
     assertApi('isConsentGranted').wasNotCalled();
-    assertApi('callInWindow').wasNotCalled();
+    assertApi('callInWindow').wasCalledWith('rc.retargetingHit', {"rtgId":"ID123","consent":0});
     assertApi('addConsentListener').wasNotCalled();
 - name: User Data - Retargeting - data from MH
   code: |-
@@ -1930,6 +1946,47 @@ scenarios:
 - name: User Data - Retargeting - consent denied
   code: |-
     retargetingData.consent_handling = 'consent_mode';
+    retargetingData.model = 'vars';
+    retargetingData.pagetype = 'category';
+    retargetingData.category = 'Jidlo/Pecivo/Bile pecivo/Rohliky';
+    retargetingData.userEmail = '836f82db99121b3481011f16b49dfa5fbc714a0d1b1b9f784a1ebbbf5b39577f';
+    retargetingData.userPhone = '+420777123456';
+    retargetingData.country = 'Czechia';
+    retargetingData.city = 'Brno';
+    retargetingData.street = 'Veveří';
+    retargetingData.streetNumber = '123';
+    retargetingData.postalCode = '60200';
+
+    mock('isConsentGranted', function(consentType) {
+      if (consentType === 'ad_user_data') return false;
+      return true;
+    });
+
+
+    runCode(retargetingData);
+
+    assertApi('callInWindow').wasCalledWith('rc.retargetingHit', {
+      'rtgId': 'ID123',
+      'pageType': 'category',
+      'category': 'Jidlo | Pecivo | Bile pecivo | Rohliky',
+      'consent': 1
+    });
+    assertApi('callInWindow').wasNotCalledWith('sznIVA.IS.updateIdentities', {
+      'eid': '836f82db99121b3481011f16b49dfa5fbc714a0d1b1b9f784a1ebbbf5b39577f',
+      'tid': '+420777123456',
+      'aid': {
+        'a1': 'Czechia',
+        'a2': 'Brno',
+        'a3': 'Veveří',
+        'a4': '123',
+        'a5': '60200',
+      }
+    });
+- name: User Data - Retargeting - consent denied from vars
+  code: |-
+    retargetingData.consent_handling = 'consent_variable';
+    retargetingData.consent_variable_remarketing = 1;
+    retargetingData.consent_variable_user_data = 0;
     retargetingData.model = 'vars';
     retargetingData.pagetype = 'category';
     retargetingData.category = 'Jidlo/Pecivo/Bile pecivo/Rohliky';
