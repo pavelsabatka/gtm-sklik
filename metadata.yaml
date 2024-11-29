@@ -1,12 +1,15 @@
-homepage: "https://www.houseofrezac.com"
+homepage: "https://www.sabatka.net"
 documentation: "https://github.com/pavelsabatka/gtm-sklik"
 versions:
   # Latest version
-  - sha: e1239ccdee40d3e91b764965d894937cafc5b1b5
-    changeNotes: Retargeting git is sent also with consent=0
+  - sha: 5c1e18e9cca640e5218be65cf93cf683ac1133f0
+    changeNotes: Minor update: not supported pageTypes are not passed, fix in category in MH
 
   
   # Older versions
+  - sha: e1239ccdee40d3e91b764965d894937cafc5b1b5
+    changeNotes: Retargeting git is sent also with consent=0
+  
   - sha: 1cc1fb2ba7900842ac0e67cd8ec64da24bc84134
     changeNotes: Default consent ad_storage for conversion tracking, minor fixes
 
