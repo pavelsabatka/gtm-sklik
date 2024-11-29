@@ -1090,16 +1090,15 @@ if (data.codetype === 'retargeting') {
       if (data.products && data.products.length) {
         params.itemId = data.products[0].id || '';
       }
-      if (data.category) {
-        if (data.categorySeznamKey) {
-          params.category = data.page[data.categorySeznamKey] || '';
-        } else {
-          params.category = ((data.page && data.page.category) ? data.page.category.replaceAll('/', ' | ') : '') || '';
+      if (data.page) {
+        let category = data.categorySeznamKey ? data.page[data.categorySeznamKey] : data.page.category;
+        if (category) {
+          params.category = category.replaceAll('/', ' | ');
         }
       }
 
     } else { // model vars
-      if (data.pagetype) params.pageType = data.pagetype || '';
+      if (data.pagetype && ['category', 'offerdetail'].indexOf(data.pagetype) > -1) params.pageType = data.pagetype || '';
       if (data.itemId) params.itemId = data.itemId || '';
       if (data.category) params.category = (data.category || '').split('/').join(' | ');
     }
@@ -1807,6 +1806,21 @@ scenarios:
     let expected = {
       'rtgId': 'ID123',
       'pageType': 'offerdetail',
+      'itemId': 'ITEM_123/4',
+      'consent': 1
+    };
+
+    runCode(retargetingData);
+
+    assertApi('callInWindow').wasCalledWith('rc.retargetingHit', expected);
+- name: Retargeting - invalid page type is ignored
+  code: |-
+    retargetingData.model = 'vars';
+    retargetingData.pagetype = 'NOT_VALID_PAGE_TYPE';
+    retargetingData.itemId = 'ITEM_123/4';
+
+    let expected = {
+      'rtgId': 'ID123',
       'itemId': 'ITEM_123/4',
       'consent': 1
     };

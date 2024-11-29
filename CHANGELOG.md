@@ -1,5 +1,9 @@
 # Changelog
 
+29.11.2024
+* Hodnoty pageType jsou kontrolovány, jestli mají povolené hodnoty, jinak není parametr vůbec předáván (protože request končí s 400 Bad Request)
+* Oprava v category pro syntaxi pro Measurement Hub
+
 17.6.2024
 * Je odesílán retargetingový hit i s consent=0. Po udělení souhlasu se odešle i consent=1
 
