@@ -3,7 +3,7 @@ documentation: "https://github.com/pavelsabatka/gtm-sklik"
 versions:
   # Latest version
   - sha: 5c1e18e9cca640e5218be65cf93cf683ac1133f0
-    changeNotes: Minor update: not supported pageTypes are not passed, fix in category in MH
+    changeNotes: Minor update - not supported pageTypes are not passed, fix in category in MH
 
   
   # Older versions
