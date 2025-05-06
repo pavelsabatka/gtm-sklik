@@ -1,5 +1,8 @@
 # Changelog
 
+6.5.2025
+* Minor fix - nahrazení nepodporované metody replaceAll
+
 29.11.2024
 * Hodnoty pageType jsou kontrolovány, jestli mají povolené hodnoty, jinak není parametr vůbec předáván (protože request končí s 400 Bad Request)
 * Oprava v category pro syntaxi pro Measurement Hub

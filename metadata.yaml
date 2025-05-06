@@ -2,11 +2,14 @@ homepage: "https://www.sabatka.net"
 documentation: "https://github.com/pavelsabatka/gtm-sklik"
 versions:
   # Latest version
-  - sha: 5c1e18e9cca640e5218be65cf93cf683ac1133f0
-    changeNotes: Minor update - not supported pageTypes are not passed, fix in category in MH
+  - sha: 03185286dda5218a05737782c900df52b555f7db
+    changeNotes: Minor update - replace unsupported method replaceAll
 
   
   # Older versions
+  - sha: 5c1e18e9cca640e5218be65cf93cf683ac1133f0
+    changeNotes: Minor update - not supported pageTypes are not passed, fix in category in MH
+  
   - sha: e1239ccdee40d3e91b764965d894937cafc5b1b5
     changeNotes: Retargeting git is sent also with consent=0
   
