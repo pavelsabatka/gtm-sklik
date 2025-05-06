@@ -82,3 +82,13 @@ Pokud zvolíte tuto možnost, můžete povolit nebo zakázat update listener. Po
 ![image](https://github.com/pavelsabatka/gtm-sklik/assets/1794400/896da879-84a9-40e6-9021-cf3bbfc4f217)
 
 Pozn: možnost `No consent required` není od 21. 2. 2024 podporována
+
+# Ostatní
+
+## Zřeknutí se zodpovědnosti
+Šablonu vyvíjím ve svém volném čase, aby Vám ušetřila čas a práci. Za její využití či případné škody vzniklé jejím používáním nejsem zodpovědný.
+Šablona stahuje skripty třetí strany (Seznam.cz), a to dle dokumentace, kterou Seznam.cz zveřejňuje. Za případné nedostatky z hlediska GDPR nejsem zodpovědný.
+
+## Konzultace
+Máte-li problémy s nasazením šablony, můžete se na mne obrátit v rámci placené konzultace.
+[Kontakty](https://www.sabatka.net/kontakt)

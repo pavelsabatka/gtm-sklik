@@ -82,3 +82,11 @@ The Sklik template supports different handling with consent. In collapsable menu
 
 Note: option `No consent required` is no longer supported
 
+# Other
+
+## Disclaimers
+I develop the template in my spare time to save you time and work. I am not responsible for its use or any damage caused by its use.
+The template downloads scripts from a third party (Seznam.cz), according to the documentation published by Seznam.cz. I am not responsible for any shortcomings in terms of GDPR.
+
+## Consultation
+If you have problems with deploying the template, you can [contact me](https://www.sabatka.net/kontakt) for a paid consultation.
