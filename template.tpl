@@ -1093,7 +1093,7 @@ if (data.codetype === 'retargeting') {
       if (data.page) {
         let category = data.categorySeznamKey ? data.page[data.categorySeznamKey] : data.page.category;
         if (category) {
-          params.category = category.replaceAll('/', ' | ');
+          params.category = category.split('/').join(' | ');
         }
       }
 
@@ -1796,6 +1796,36 @@ scenarios:
 
     runCode(retargetingData);
 
+    assertApi('callInWindow').wasCalledWith('rc.retargetingHit', expected);
+- name: Retargeting - category page - with category
+  code: |-
+    retargetingData = {
+      'id': 'ID123',
+      'model': 'mh',
+      'codetype': 'retargeting',
+      'multipleHitsPerPage': false,
+      'consent_handling': 'consent_mode',
+      'consent_name_remarketing': 'ad_storage',
+      'consent_name_conversion': 'analytics_storage',
+      'consent_name_user_data': 'ad_user_data',
+      'disableUpdateListener': false,
+      'page': {
+        'type': 'category',
+        'category': 'A/B/C'
+      }
+    };
+
+    // Call runCode to run the template's code.
+    runCode(retargetingData);
+
+
+
+    let expected = {
+      "rtgId": "ID123",
+      "consent": 1,
+      "pageType": "category",
+      "category": "A | B | C"
+    };
     assertApi('callInWindow').wasCalledWith('rc.retargetingHit', expected);
 - name: Retargeting - offerdetail page - standard
   code: |-
