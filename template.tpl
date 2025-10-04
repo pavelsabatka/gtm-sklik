@@ -809,7 +809,8 @@ data.consent_name_user_data = data.consent_name_user_data || 'ad_user_data';
 
 
 /**
- * Evaluates status of a consent
+ * Evaluates status of a consent by purpose.
+ * Expected values are remarketing | conversion | user_data
  * Possible return values:
  *
  *   0     consent denied (or not granted)
@@ -818,15 +819,14 @@ data.consent_name_user_data = data.consent_name_user_data || 'ad_user_data';
  * @param consent_type
  * @return integer
  */
-const getConsentState = function(consentType) {
-  if (consentType === 'retargeting') consentType = 'remarketing';
-  if (consentType === 'ad_user_data') consentType = 'user_data';
+const getConsentState = function(consentPurpose) {
+  if (consentPurpose === 'retargeting') consentPurpose = 'remarketing';
     
   if (data.consent_handling === 'consent_mode') {
-    return makeInteger(isConsentGranted(data['consent_name_'+consentType]));
+    return makeInteger(isConsentGranted(data['consent_name_'+consentPurpose]));
 
   } else if (data.consent_handling === 'consent_variable') {
-    let consent = data['consent_variable_'+consentType];
+    let consent = data['consent_variable_'+consentPurpose];
     if (consent === 'granted' || consent === 'true' || consent == true) return 1;
     else if (consent === 'denied' || consent === 'false' || consent == false) return 0;
     else return makeInteger(consent);
@@ -896,7 +896,7 @@ const parseStreetNo = function(street) {
  * @return void
  */
 const addUserData = function(onSuccess) {
-  if (!getConsentState(data.consent_name_user_data)) {
+  if (!getConsentState('user_data')) {
     return onSuccess();
   } else if (data.consent_handling === 'consent_mode') {
     addConsentListener(data.consent_name_user_data, (consentType, granted) => {
@@ -1042,20 +1042,20 @@ const prepareAndSendHit = function(consent) {
  * Resolves all things accoring a consent configuration
  * If consent mode is used, adds a consent listener if consent is not granted
  * 
- * @param string consentType
+ * @param string consentPurpose, possible values remarketing | conversion
  * @param function callback
  * @return void
  */
-const resolveConsent = function(consentType, callback) {
-  let consent = getConsentState(consentType);
-  let consentName = data['consent_name_'+consentType];
+const resolveConsent = function(consentPurpose, callback) {
+  let consent = getConsentState(consentPurpose);
+  let consentName = data['consent_name_'+consentPurpose];
   
   log('SKLIK consent for '+consentName+': ', consent, ', consent hadnling:', data.consent_handling, ', disableUpdateListener:', data.disableUpdateListener);
   
   if (consent === 0 && !data.disableUpdateListener && data.consent_handling === 'consent_mode') {
-    addConsentListener(consentName, (consentType, granted) => {
+    addConsentListener(consentName, (consentPurpose, granted) => {
 	  log('SKLIK '+data.codetype+': callback called, consent:', granted);
-      if (consentType === consentName && granted) {
+      if (consentPurpose === consentName && granted) {
 	    callback(makeInteger(granted));
 	  }
     });
@@ -1132,7 +1132,7 @@ if (data.codetype === 'retargeting') {
     return params;
   };
 
-  resolveConsent('conversion', prepareAndSendHit);  
+  resolveConsent('conversion', prepareAndSendHit);
 
   
   

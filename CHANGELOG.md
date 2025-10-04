@@ -1,5 +1,8 @@
 # Changelog
 
+4.10.2025
+* Minor fix - user_data consent handling made a problems when different consent then ad_user_data was selected
+
 6.5.2025
 * Minor fix - nahrazení nepodporované metody replaceAll
 
