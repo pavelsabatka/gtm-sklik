@@ -2,11 +2,14 @@ homepage: "https://www.sabatka.net"
 documentation: "https://github.com/pavelsabatka/gtm-sklik"
 versions:
   # Latest version
-  - sha: 03185286dda5218a05737782c900df52b555f7db
-    changeNotes: Minor update - replace unsupported method replaceAll
+  - sha: 605968b8d79dd5f3006edf3913aa2f0a6c17936f
+    changeNotes: Minor fix - user_data consent handling made a problems when different consent then ad_user_data was selected
 
   
   # Older versions
+  - sha: 03185286dda5218a05737782c900df52b555f7db
+    changeNotes: Minor update - replace unsupported method replaceAll
+  
   - sha: 5c1e18e9cca640e5218be65cf93cf683ac1133f0
     changeNotes: Minor update - not supported pageTypes are not passed, fix in category in MH
   
@@ -16,7 +19,7 @@ versions:
   - sha: 1cc1fb2ba7900842ac0e67cd8ec64da24bc84134
     changeNotes: Default consent ad_storage for conversion tracking, minor fixes
 
-  - sha: d0e8d0853af81479991b2bd966c7c42acb7bbc2e
+  - sha: d0e8d0853af81479991b2bd966c7c42acb7bbc2e   
     changeNotes: Added user identity advanced matching, update consent handling
   
   - sha: 496dcdabb5659c58e4b74b757825de454a359335
